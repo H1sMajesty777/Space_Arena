@@ -237,7 +237,7 @@
 .logo-shell {
   position: relative;
   width: 100%;
-  animation: logo-float 5s var(--settled) ease-in-out 1;
+  animation: logo-float 7s var(--settled) ease-in-out infinite;
 }
 
 .logo-shell::before {
@@ -381,7 +381,7 @@
   border: 1px solid #b573ff33;
   border-radius: 50%;
   transform: rotate(-16deg) scaleY(0.7);
-  animation: orbit-breathe 5s var(--settled) ease-in-out 1;
+  animation: orbit-breathe 10s var(--settled) ease-in-out infinite;
   box-shadow: 0 0 45px #a141ff12, inset 0 0 45px #a141ff0d;
   pointer-events: none;
 }
@@ -610,6 +610,11 @@
   .guest-qr, .guest-qr svg { width: 88px; height: 88px; }
   .guest-access-text strong { font-size: 11px; }
   .guest-access-text span { font-size: 10px; }
+}
+
+[data-motion-paused] .logo-shell,
+[data-motion-paused] .orbital-halo {
+  animation-play-state: paused;
 }
 
 @media (prefers-reduced-motion: reduce) {

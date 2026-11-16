@@ -24,13 +24,17 @@ import winerror
 import win32con
 import win32gui
 import win32ts
+
+from watchdog import EXIT_SETUP_REQUIRED
 from PySide6.QtCore import Qt, QTimer, QUrl, Signal
 from PySide6.QtWidgets import QApplication
+from PySide6.QtWebEngineCore import QWebEnginePage
 from PySide6.QtWebEngineWidgets import QWebEngineView
 
 SETTINGS = Path(os.environ["LOCALAPPDATA"]) / "SpaceArena" / "device.bin"
 BANNER = Path(__file__).resolve().parent / "banner"
 OVERLAY_SETTLE_DELAY_SECONDS = 5
+OVERLAY_DISCARD_DELAY_SECONDS = 60
 WM_WTSSESSION_CHANGE = 0x02B1
 WTS_SESSION_LOCK = 0x7
 WTS_SESSION_UNLOCK = 0x8
@@ -127,16 +131,19 @@ def lower_overlay(handle):
                           win32con.SWP_NOACTIVATE)
 
 
-def foreground_covers_overlay(handle):
-    """Проверяем, полностью ли другое окно закрывает баннер."""
+def foreground_is_fullscreen(handle):
     foreground = win32gui.GetForegroundWindow()
     if not foreground or foreground == handle or win32gui.IsIconic(foreground):
         return False
     if win32gui.GetClassName(foreground) in {"Progman", "WorkerW", "Shell_TrayWnd"}:
         return False
+    style = win32gui.GetWindowLong(foreground, win32con.GWL_STYLE)
+    if style & win32con.WS_MAXIMIZE and style & win32con.WS_CAPTION == win32con.WS_CAPTION:
+        return False
+    monitor = win32api.MonitorFromWindow(handle, win32con.MONITOR_DEFAULTTONEAREST)
+    ml, mt, mr, mb = win32api.GetMonitorInfo(monitor)["Monitor"]
     left, top, right, bottom = win32gui.GetWindowRect(foreground)
-    box_left, box_top, box_right, box_bottom = win32gui.GetWindowRect(handle)
-    return left <= box_left and top <= box_top and right >= box_right and bottom >= box_bottom
+    return left <= ml and top <= mt and right >= mr and bottom >= mb
 
 
 class SessionOverlay(QWebEngineView):
@@ -178,7 +185,7 @@ class SessionOverlay(QWebEngineView):
 
 def create_overlay(url):
     window = SessionOverlay()
-    window.setWindowTitle("SPACE ARENA")
+    window.setWindowTitle("Space Arena Banner")
     window.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool)
     window.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
     window.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
@@ -197,65 +204,107 @@ def create_overlay(url):
     return window
 
 
-def monitor_animation(window, handle, timer, covered_since):
-    """Завершаем анимацию после непрерывного перекрытия."""
-    try:
-        covered = foreground_covers_overlay(handle)
-    except win32gui.error:
-        return None  # Окно могло закрыться между проверкой и чтением его размеров.
-    if not covered:
-        return None
-
-    now = time.monotonic()
-    if covered_since is None:
-        return now
-    if now - covered_since >= OVERLAY_SETTLE_DELAY_SECONDS:
-        window.page().runJavaScript("""
-            for (const animation of document.getAnimations()) {
-                if (Number.isFinite(animation.effect.getComputedTiming().endTime)) {
-                    animation.finish();
-                } else {
-                    animation.pause();
-                }
+def finish_overlay_intro(page):
+    page.runJavaScript("""
+        for (const animation of document.getAnimations()) {
+            if (Number.isFinite(animation.effect.getComputedTiming().endTime)) {
+                animation.finish();
             }
-        """)
-        timer.stop()
-    return covered_since
+        }
+    """)
+
+
+def set_overlay_motion(page, enabled):
+    paused = "false" if enabled else "true"
+    page.runJavaScript(f'document.documentElement.toggleAttribute("data-motion-paused", {paused})')
 
 
 def configure_overlay_replay(window, handle):
-    covered_since = None
+    page = window.page()
+    lifecycle = QWebEnginePage.LifecycleState
+    fullscreen_since = None
+    settled = False
     locked = False
-    cover_timer = QTimer(window)
-    cover_timer.setInterval(250)
-    replay_timer = QTimer(window)
-    replay_timer.setSingleShot(True)
-    # Даём Windows вернуться с экрана блокировки на рабочий стол.
-    replay_timer.setInterval(350)
-    replay_timer.timeout.connect(window.reload)
 
-    def check_animation():
-        nonlocal covered_since
-        covered_since = monitor_animation(window, handle, cover_timer, covered_since)
+    fullscreen_timer = QTimer(window)
+    fullscreen_timer.setInterval(250)
+    unlock_timer = QTimer(window)
+    unlock_timer.setSingleShot(True)
+    unlock_timer.setInterval(350)
+
+    def restore_overlay():
+        if page.lifecycleState() == lifecycle.Discarded:
+            # Qt заново загружает страницу при выходе из Discarded.
+            page.setLifecycleState(lifecycle.Active)
+        else:
+            window.reload()
+        window.show()
+        lower_overlay(handle)
+
+    def check_fullscreen():
+        nonlocal fullscreen_since, settled
+        if locked:
+            return True
+        try:
+            fullscreen = foreground_is_fullscreen(handle)
+        except win32gui.error:
+            # Сохраняем текущее состояние, если окно закрылось во время проверки.
+            return fullscreen_since is not None
+
+        if not fullscreen:
+            was_settled = settled
+            fullscreen_since, settled = None, False
+            if window.isHidden() and not unlock_timer.isActive():
+                restore_overlay()
+            elif was_settled and window.isVisible():
+                set_overlay_motion(page, True)
+            return False
+
+        now = time.monotonic()
+        if fullscreen_since is None:
+            fullscreen_since = now
+        elapsed = now - fullscreen_since
+        if elapsed >= OVERLAY_SETTLE_DELAY_SECONDS and not settled:
+            settled = True
+            finish_overlay_intro(page)
+            set_overlay_motion(page, False)
+        if elapsed >= OVERLAY_DISCARD_DELAY_SECONDS:
+            if window.isVisible():
+                window.hide()
+                page.setVisible(False)
+            if page.lifecycleState() != lifecycle.Discarded and not page.isLoading():
+                page.setLifecycleState(lifecycle.Discarded)
+        return True
+
+    def replay_on_unlock():
+        was_hidden = window.isHidden()
+        if not check_fullscreen() and not was_hidden:
+            window.reload()
 
     def on_load_finished(loaded):
-        if loaded and not locked and not replay_timer.isActive():
-            cover_timer.start()
+        if locked or unlock_timer.isActive():
+            return
+        if check_fullscreen() and settled and loaded and window.isVisible():
+            finish_overlay_intro(page)
+            set_overlay_motion(page, False)
 
     def on_session_lock_changed(is_locked):
-        nonlocal covered_since, locked
+        nonlocal fullscreen_since, locked
         locked = is_locked
-        covered_since = None
-        cover_timer.stop()
         if locked:
-            replay_timer.stop()
+            fullscreen_timer.stop()
+            unlock_timer.stop()
         else:
-            replay_timer.start()
+            fullscreen_since = None
+            unlock_timer.start()
+            fullscreen_timer.start()
 
-    cover_timer.timeout.connect(check_animation)
+    fullscreen_timer.timeout.connect(check_fullscreen)
+    unlock_timer.timeout.connect(replay_on_unlock)
     window.loadFinished.connect(on_load_finished)
     window.session_lock_changed.connect(on_session_lock_changed)
     window.watch_session(handle)
+    fullscreen_timer.start()
 
 
 def run():
@@ -267,12 +316,12 @@ def run():
     except Exception as issue:
         messagebox.showerror("Настройка SPACE ARENA", str(issue), parent=setup)
         setup.destroy()
-        return
+        return EXIT_SETUP_REQUIRED
     setup.destroy()
 
     if not BANNER.joinpath("index.html").exists():
         messagebox.showerror("SPACE ARENA", "Не найдены файлы баннера. Переустановите агент.")
-        return
+        return EXIT_SETUP_REQUIRED
 
     stop = threading.Event()
     current = {"url": None, "expires": 0, "status": "Подключаемся…"}
@@ -321,6 +370,8 @@ def run():
 
     try:
         app = QApplication([])
+        app.setApplicationName("Space Arena Banner")
+        app.setApplicationDisplayName("Space Arena Banner")
         window = create_overlay(f"http://127.0.0.1:{server.server_port}/")
         window.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         window.destroyed.connect(app.quit)
@@ -331,7 +382,7 @@ def run():
         app.aboutToQuit.connect(window.unwatch_session)
         configure_overlay_replay(window, handle)
         threading.Thread(target=worker, daemon=True).start()
-        app.exec()
+        return app.exec()
     finally:
         stop.set()
         server.shutdown()
@@ -341,6 +392,7 @@ def run():
 if __name__ == "__main__":
     mutex = win32event.CreateMutex(None, False, "Local\\SpaceArenaOrdersAgent")
     if win32api.GetLastError() != winerror.ERROR_ALREADY_EXISTS:
-        run()
+        sys.exit(run())
+    sys.exit(EXIT_SETUP_REQUIRED)
 
 
