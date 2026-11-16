@@ -1,0 +1,803 @@
+[
+  {
+    "name": "Куриные стрипсы",
+    "description": "с кисло-сладким соусом",
+    "price": 600,
+    "category": "Горячие закуски",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 1
+  },
+  {
+    "name": "Креветки «попкорн»",
+    "description": "с имбирным чили соусом",
+    "price": 990,
+    "category": "Горячие закуски",
+    "image_url": "assets/dishes/shrimp.jpg",
+    "all_day": false,
+    "sort_order": 2
+  },
+  {
+    "name": "Лобио по-мегрельски",
+    "description": "острое",
+    "price": 590,
+    "category": "Горячие закуски",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 3
+  },
+  {
+    "name": "Лобио по-имеретински",
+    "description": "острое",
+    "price": 650,
+    "category": "Горячие закуски",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 4
+  },
+  {
+    "name": "Жареный сулугуни",
+    "description": "с брусничным соусом",
+    "price": 650,
+    "category": "Горячие закуски",
+    "image_url": "assets/dishes/sulguni.jpg",
+    "all_day": false,
+    "sort_order": 5
+  },
+  {
+    "name": "Жюльен с курицей и грибами",
+    "description": "",
+    "price": 650,
+    "category": "Горячие закуски",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 6
+  },
+  {
+    "name": "Долма из баранины",
+    "description": "",
+    "price": 1100,
+    "category": "Горячие закуски",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 7
+  },
+  {
+    "name": "Долма из говядины",
+    "description": "",
+    "price": 990,
+    "category": "Горячие закуски",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 8
+  },
+  {
+    "name": "«Грузин-Бургер» из мраморной говядины",
+    "description": "с тархуном, копчёным сыром и колоу-слоу",
+    "price": 1290,
+    "category": "Горячие блюда",
+    "image_url": "assets/dishes/burger.jpg",
+    "all_day": false,
+    "sort_order": 9
+  },
+  {
+    "name": "Смэш-бургер",
+    "description": "с колоу-слоу",
+    "price": 1190,
+    "category": "Горячие блюда",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 10
+  },
+  {
+    "name": "Чикен-бургер",
+    "description": "с колоу-слоу",
+    "price": 990,
+    "category": "Горячие блюда",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 11
+  },
+  {
+    "name": "Шаурма из курицы",
+    "description": "с сацебели",
+    "price": 890,
+    "category": "Горячие блюда",
+    "image_url": "assets/dishes/shawarma.jpg",
+    "all_day": false,
+    "sort_order": 12
+  },
+  {
+    "name": "Куриный люля с сыром в слоёном тесте",
+    "description": "со сметаной, мёдом и гурийской капустой",
+    "price": 1100,
+    "category": "Горячие блюда",
+    "image_url": "assets/dishes/chickenPastry.jpg",
+    "all_day": false,
+    "sort_order": 13
+  },
+  {
+    "name": "Куриная грудка",
+    "description": "с листьями салата",
+    "price": 850,
+    "category": "Горячие блюда",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 14
+  },
+  {
+    "name": "Бефстроганов",
+    "description": "с картофельным пюре",
+    "price": 1250,
+    "category": "Горячие блюда",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 15
+  },
+  {
+    "name": "Плов из курицы",
+    "description": "с салатом ачичук",
+    "price": 890,
+    "category": "Горячие блюда",
+    "image_url": "assets/dishes/plov.jpg",
+    "all_day": false,
+    "sort_order": 16
+  },
+  {
+    "name": "Филе судака на пару",
+    "description": "с припущенными овощами",
+    "price": 1290,
+    "category": "Горячие блюда",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 17
+  },
+  {
+    "name": "Палтус запечённый",
+    "description": "с зелёным пюре из цукини и шпината",
+    "price": 1690,
+    "category": "Горячие блюда",
+    "image_url": "assets/dishes/halibut.jpg",
+    "all_day": false,
+    "sort_order": 18
+  },
+  {
+    "name": "Хачапури по-аджарски с яйцом",
+    "description": "",
+    "price": 680,
+    "category": "Хачапури",
+    "image_url": "assets/dishes/hachapuriAdjar.jpg",
+    "all_day": false,
+    "sort_order": 19
+  },
+  {
+    "name": "Хачапури по-аджарски с помидорами",
+    "description": "",
+    "price": 850,
+    "category": "Хачапури",
+    "image_url": "assets/dishes/hachapuriAdjar.jpg",
+    "all_day": false,
+    "sort_order": 20
+  },
+  {
+    "name": "По-имеретински",
+    "description": "",
+    "price": 730,
+    "category": "Хачапури",
+    "image_url": "assets/dishes/hachapuriImeretian.jpg",
+    "all_day": false,
+    "sort_order": 21
+  },
+  {
+    "name": "По-мегрельски",
+    "description": "",
+    "price": 750,
+    "category": "Хачапури",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 22
+  },
+  {
+    "name": "Сэндвич с говяжьим фаршем",
+    "description": "",
+    "price": 550,
+    "category": "Закуски на кухне круглосуточно",
+    "image_url": "assets/dishes/beefSandwich.jpg",
+    "all_day": true,
+    "sort_order": 23
+  },
+  {
+    "name": "Сэндвич с куриными стрипсами",
+    "description": "",
+    "price": 550,
+    "category": "Закуски на кухне круглосуточно",
+    "image_url": null,
+    "all_day": true,
+    "sort_order": 24
+  },
+  {
+    "name": "Чиабатта с индейкой",
+    "description": "",
+    "price": 500,
+    "category": "Закуски на кухне круглосуточно",
+    "image_url": "assets/dishes/ciabatta.jpg",
+    "all_day": true,
+    "sort_order": 25
+  },
+  {
+    "name": "Ролл с ветчиной и сыром",
+    "description": "",
+    "price": 500,
+    "category": "Закуски на кухне круглосуточно",
+    "image_url": null,
+    "all_day": true,
+    "sort_order": 26
+  },
+  {
+    "name": "Мини-бургер",
+    "description": "",
+    "price": 500,
+    "category": "Закуски на кухне круглосуточно",
+    "image_url": null,
+    "all_day": true,
+    "sort_order": 27
+  },
+  {
+    "name": "Хот-дог",
+    "description": "с куриной сосиской",
+    "price": 450,
+    "category": "Закуски на кухне круглосуточно",
+    "image_url": "assets/dishes/hotdog.jpg",
+    "all_day": true,
+    "sort_order": 28
+  },
+  {
+    "name": "Маргарита",
+    "description": "",
+    "price": 650,
+    "category": "Пицца",
+    "image_url": "assets/dishes/pizza.jpg",
+    "all_day": true,
+    "sort_order": 29
+  },
+  {
+    "name": "Пепперони",
+    "description": "",
+    "price": 700,
+    "category": "Пицца",
+    "image_url": null,
+    "all_day": true,
+    "sort_order": 30
+  },
+  {
+    "name": "4 сыра",
+    "description": "",
+    "price": 750,
+    "category": "Пицца",
+    "image_url": null,
+    "all_day": true,
+    "sort_order": 31
+  },
+  {
+    "name": "Груша-горгонзола",
+    "description": "",
+    "price": 750,
+    "category": "Пицца",
+    "image_url": null,
+    "all_day": true,
+    "sort_order": 32
+  },
+  {
+    "name": "Маринара",
+    "description": "",
+    "price": 850,
+    "category": "Пицца",
+    "image_url": null,
+    "all_day": true,
+    "sort_order": 33
+  },
+  {
+    "name": "Черничный торт",
+    "description": "",
+    "price": 450,
+    "category": "Десерты",
+    "image_url": "assets/dishes/cake.jpg",
+    "all_day": true,
+    "sort_order": 34
+  },
+  {
+    "name": "Шоколадный трайфл",
+    "description": "",
+    "price": 450,
+    "category": "Десерты",
+    "image_url": "assets/dishes/trifle.jpg",
+    "all_day": true,
+    "sort_order": 35
+  },
+  {
+    "name": "Манговый мусс",
+    "description": "",
+    "price": 450,
+    "category": "Десерты",
+    "image_url": null,
+    "all_day": true,
+    "sort_order": 36
+  },
+  {
+    "name": "Три шоколада",
+    "description": "",
+    "price": 450,
+    "category": "Десерты",
+    "image_url": null,
+    "all_day": true,
+    "sort_order": 37
+  },
+  {
+    "name": "Аффогато",
+    "description": "",
+    "price": 350,
+    "category": "Десерты",
+    "image_url": null,
+    "all_day": true,
+    "sort_order": 38
+  },
+  {
+    "name": "Ванильное",
+    "description": "",
+    "price": 150,
+    "category": "Мороженое",
+    "image_url": null,
+    "all_day": true,
+    "sort_order": 39
+  },
+  {
+    "name": "Шоколадное",
+    "description": "",
+    "price": 150,
+    "category": "Мороженое",
+    "image_url": null,
+    "all_day": true,
+    "sort_order": 40
+  },
+  {
+    "name": "Клубничное",
+    "description": "",
+    "price": 150,
+    "category": "Мороженое",
+    "image_url": null,
+    "all_day": true,
+    "sort_order": 41
+  },
+  {
+    "name": "Фисташковое",
+    "description": "",
+    "price": 150,
+    "category": "Мороженое",
+    "image_url": null,
+    "all_day": true,
+    "sort_order": 42
+  },
+  {
+    "name": "Рулетики из баклажанов",
+    "description": "с ореховой начинкой",
+    "price": 680,
+    "category": "Холодные закуски и салаты",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 43
+  },
+  {
+    "name": "Аджапсандал",
+    "description": "",
+    "price": 730,
+    "category": "Холодные закуски и салаты",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 44
+  },
+  {
+    "name": "Сациви из курицы",
+    "description": "",
+    "price": 790,
+    "category": "Холодные закуски и салаты",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 45
+  },
+  {
+    "name": "Ассорти пхали",
+    "description": "из шпината, стручковой фасоли, капусты со свёклой и красной фасоли",
+    "price": 640,
+    "category": "Холодные закуски и салаты",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 46
+  },
+  {
+    "name": "Ассорти мезе",
+    "description": "хумус, муттабаль, мухаммара, икра из баклажанов, цахтон",
+    "price": 1200,
+    "category": "Холодные закуски и салаты",
+    "image_url": "assets/dishes/mezze.jpg",
+    "all_day": false,
+    "sort_order": 47
+  },
+  {
+    "name": "Свежие овощи",
+    "description": "помидор, огурец, болгарский перец, редис, острый перец и зелёный лук",
+    "price": 1250,
+    "category": "Холодные закуски и салаты",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 48
+  },
+  {
+    "name": "Салат из свежих овощей с острым перчиком",
+    "description": "с маслом или сметаной на выбор",
+    "price": 680,
+    "category": "Холодные закуски и салаты",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 49
+  },
+  {
+    "name": "Салат с хрустящими баклажанами",
+    "description": "и домашним мягким сыром",
+    "price": 850,
+    "category": "Холодные закуски и салаты",
+    "image_url": "assets/dishes/eggplantSalad.jpg",
+    "all_day": false,
+    "sort_order": 50
+  },
+  {
+    "name": "Оливье с курицей",
+    "description": "",
+    "price": 750,
+    "category": "Холодные закуски и салаты",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 51
+  },
+  {
+    "name": "Цезарь по-грузински",
+    "description": "с куриным шашлыком и сыром чечил",
+    "price": 890,
+    "category": "Холодные закуски и салаты",
+    "image_url": "assets/dishes/caesar.jpg",
+    "all_day": false,
+    "sort_order": 52
+  },
+  {
+    "name": "Цезарь с креветками",
+    "description": "",
+    "price": 1250,
+    "category": "Холодные закуски и салаты",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 53
+  },
+  {
+    "name": "Салат с индейкой на мангале",
+    "description": "с овощами и листьями салата",
+    "price": 870,
+    "category": "Холодные закуски и салаты",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 54
+  },
+  {
+    "name": "Тёплый салат с говядиной",
+    "description": "с болгарским перцем, красной фасолью, листьями салата и гранатом",
+    "price": 1190,
+    "category": "Холодные закуски и салаты",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 55
+  },
+  {
+    "name": "Салат с лососем и авокадо",
+    "description": "с овощами и листьями салата",
+    "price": 1190,
+    "category": "Холодные закуски и салаты",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 56
+  },
+  {
+    "name": "Лапша с курицей и грибами",
+    "description": "",
+    "price": 590,
+    "category": "Супы",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 57
+  },
+  {
+    "name": "Борщ",
+    "description": "с пампушкой",
+    "price": 690,
+    "category": "Супы",
+    "image_url": "assets/dishes/borscht.jpg",
+    "all_day": false,
+    "sort_order": 58
+  },
+  {
+    "name": "Харчо из говядины",
+    "description": "острое",
+    "price": 750,
+    "category": "Супы",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 59
+  },
+  {
+    "name": "Тыквенный крем-суп",
+    "description": "",
+    "price": 650,
+    "category": "Супы",
+    "image_url": "assets/dishes/pumpkinSoup.jpg",
+    "all_day": false,
+    "sort_order": 60
+  },
+  {
+    "name": "Кутабы с картофелем",
+    "description": "",
+    "price": 240,
+    "category": "Хлеб",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 61
+  },
+  {
+    "name": "Кутабы с зеленью",
+    "description": "",
+    "price": 280,
+    "category": "Хлеб",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 62
+  },
+  {
+    "name": "Кутабы с сыром",
+    "description": "",
+    "price": 290,
+    "category": "Хлеб",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 63
+  },
+  {
+    "name": "Грузинский лаваш",
+    "description": "с соусом сацебели",
+    "price": 190,
+    "category": "Хлеб",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 64
+  },
+  {
+    "name": "Тонкий лаваш",
+    "description": "",
+    "price": 160,
+    "category": "Хлеб",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 65
+  },
+  {
+    "name": "Куриная по-киевски",
+    "description": "с картофельным эларджи",
+    "price": 890,
+    "category": "Котлеты от шефа",
+    "image_url": "assets/dishes/kyiv.jpg",
+    "all_day": false,
+    "sort_order": 66
+  },
+  {
+    "name": "По-домашнему из говядины",
+    "description": "с картофельным пюре",
+    "price": 990,
+    "category": "Котлеты от шефа",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 67
+  },
+  {
+    "name": "Из лосося и судака",
+    "description": "с картофельным пюре",
+    "price": 1450,
+    "category": "Котлеты от шефа",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 68
+  },
+  {
+    "name": "Люля-кебаб из курицы",
+    "description": "",
+    "price": 790,
+    "category": "Блюда на мангале",
+    "image_url": "assets/dishes/lulaKebab.jpg",
+    "all_day": false,
+    "sort_order": 69
+  },
+  {
+    "name": "Люля-кебаб из ягнёнка",
+    "description": "",
+    "price": 1150,
+    "category": "Блюда на мангале",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 70
+  },
+  {
+    "name": "Шашлык из куриного бедра",
+    "description": "",
+    "price": 890,
+    "category": "Блюда на мангале",
+    "image_url": "assets/dishes/chickenSkewer.jpg",
+    "all_day": false,
+    "sort_order": 71
+  },
+  {
+    "name": "Шашлык из филе индейки",
+    "description": "",
+    "price": 1100,
+    "category": "Блюда на мангале",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 72
+  },
+  {
+    "name": "Шашлык из мякоти ягнёнка",
+    "description": "",
+    "price": 1490,
+    "category": "Блюда на мангале",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 73
+  },
+  {
+    "name": "Шашлык из каре ягнёнка",
+    "description": "",
+    "price": 1700,
+    "category": "Блюда на мангале",
+    "image_url": "assets/dishes/lambRack.jpg",
+    "all_day": false,
+    "sort_order": 74
+  },
+  {
+    "name": "Дорадо",
+    "description": "рыба и морепродукты",
+    "price": 1490,
+    "category": "Блюда на мангале",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 75
+  },
+  {
+    "name": "Стейк из сёмги",
+    "description": "рыба и морепродукты",
+    "price": 1790,
+    "category": "Блюда на мангале",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 76
+  },
+  {
+    "name": "Батат фри",
+    "description": "с пармезаном",
+    "price": 450,
+    "category": "Гарниры",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 77
+  },
+  {
+    "name": "Мини-картофель",
+    "description": "",
+    "price": 390,
+    "category": "Гарниры",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 78
+  },
+  {
+    "name": "Кукуруза",
+    "description": "",
+    "price": 450,
+    "category": "Гарниры",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 79
+  },
+  {
+    "name": "Ассорти овощей",
+    "description": "",
+    "price": 590,
+    "category": "Гарниры",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 80
+  },
+  {
+    "name": "Картофельное пюре",
+    "description": "",
+    "price": 320,
+    "category": "Гарниры",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 81
+  },
+  {
+    "name": "Микс дикого и белого риса",
+    "description": "",
+    "price": 320,
+    "category": "Гарниры",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 82
+  },
+  {
+    "name": "Картофель фри",
+    "description": "",
+    "price": 390,
+    "category": "Гарниры",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 83
+  },
+  {
+    "name": "Ткемали (зелёный или красный)",
+    "description": "",
+    "price": 180,
+    "category": "Соусы",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 84
+  },
+  {
+    "name": "Сацебели",
+    "description": "",
+    "price": 180,
+    "category": "Соусы",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 85
+  },
+  {
+    "name": "Аджика",
+    "description": "",
+    "price": 180,
+    "category": "Соусы",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 86
+  },
+  {
+    "name": "Наршараб",
+    "description": "",
+    "price": 180,
+    "category": "Соусы",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 87
+  },
+  {
+    "name": "Сметанно-чесночный",
+    "description": "",
+    "price": 180,
+    "category": "Соусы",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 88
+  },
+  {
+    "name": "Мацони",
+    "description": "",
+    "price": 180,
+    "category": "Соусы",
+    "image_url": null,
+    "all_day": false,
+    "sort_order": 89
+  }
+]

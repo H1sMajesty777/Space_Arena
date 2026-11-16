@@ -1,0 +1,10 @@
+{
+  "description": "Explore a professional’s career journey through an interactive resume timeline and download a polished PDF for easy sharing.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

@@ -1,0 +1,461 @@
+/* Гостевое меню по QR. Размеры шапки и нижней панели используются для отступов. */
+.order-app {
+  --order-header-height: 64px;
+  --order-dock-height: 76px;
+  --order-touch: 44px;
+  --order-surface: #190f26cb;
+  overflow-x: clip;
+}
+
+.order-app .order-header {
+  background: #120a20ed;
+  backdrop-filter: none;
+  animation-duration: 0.48s;
+}
+
+.order-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: calc(var(--order-header-height) - 1px);
+}
+
+.order-header-inner .club-logo {
+  width: clamp(98px, 29vw, 132px);
+}
+
+.order-place {
+  color: #e1c9ff;
+  background: #251636;
+  border-radius: 999px;
+  padding: 6px 11px;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.order-intro {
+  position: relative;
+  text-align: center;
+  padding-top: clamp(24px, 5.5vw, 60px);
+  padding-bottom: clamp(18px, 4vw, 42px);
+}
+
+.order-intro h1 {
+  font-size: clamp(56px, 16vw, 148px);
+  line-height: 0.92;
+  text-shadow:
+    0 0 46px #9f4fff8a,
+    0 0 14px #c6a0ff50;
+}
+
+.order-kitchen-name {
+  margin-top: 9px;
+  color: var(--p2);
+  font: 700 clamp(10px, 3vw, 15px) var(--hd);
+  letter-spacing: 0.38em;
+  animation: club-arrive 0.5s 0.32s ease-out both;
+}
+
+.order-orbit {
+  display: none;
+  position: absolute;
+  top: 25%;
+  width: clamp(42px, 11vw, 152px);
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 1px solid var(--p2);
+  box-shadow: 0 0 30px #8b2bff72;
+  animation: fl2 6s ease-in-out infinite;
+}
+
+.order-orbit-left {
+  left: 8%;
+}
+
+.order-orbit-right {
+  right: 8%;
+  animation-delay: -2s;
+}
+
+@media (min-width: 540px) {
+  .order-orbit {
+    display: block;
+  }
+}
+
+.kitchen-status {
+  width: fit-content;
+  margin: 11px auto 0;
+  padding: 4px 10px;
+  border: 1px solid var(--ln);
+  border-radius: 999px;
+  background: #170e249c;
+  color: #c5b6d9;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.kitchen-status strong {
+  color: #ecd8ff;
+}
+
+.order-app .bar {
+  top: calc(var(--order-header-height) + env(safe-area-inset-top, 0px));
+  background: #130b22ed;
+  backdrop-filter: none;
+}
+
+.order-app .bar input {
+  min-height: var(--order-touch);
+  border-radius: 13px;
+  font-size: 16px;
+}
+
+.order-app .chs button {
+  min-height: var(--order-touch);
+  padding-inline: 12px;
+  transform: none;
+}
+
+.order-app .chs button:focus-visible {
+  outline-offset: -3px;
+}
+
+.order-app [data-m] {
+  translate: var(--magnet-x, 0px) var(--magnet-y, 0px);
+  transition:
+    translate 0.18s ease-out,
+    scale 0.16s ease-out,
+    background-color 0.2s;
+}
+
+.order-app .menu-line[data-enter] {
+  opacity: 0;
+  transform: translateY(14px);
+}
+
+.order-app .menu-line[data-enter].in,
+.order-app .menu-line[data-enter]:focus-within {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.4s var(--entry-delay),
+    transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) var(--entry-delay);
+}
+
+.order-app .order-featured .sg {
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: clamp(150px, 23%, 245px);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+}
+
+.order-app .order-featured .sc {
+  scroll-snap-align: start;
+}
+
+.order-app .menu-name-copy {
+  min-width: 0;
+  font: inherit;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.order-app .menu-thumb {
+  display: none;
+}
+
+.order-app .menu-line-action:empty {
+  display: none;
+}
+
+.order-app .menu-line-action .quantity button,
+.order-app .cart-row .quantity button,
+.order-app .detail-actions .quantity button,
+.order-app .round-button {
+  width: var(--order-touch);
+  height: var(--order-touch);
+}
+
+.order-app .choose-item {
+  min-height: var(--order-touch);
+}
+
+.order-app .club-footer {
+  padding-bottom: calc(var(--order-dock-height) + 36px + env(safe-area-inset-bottom, 0px));
+}
+
+/* История и корзина всегда доступны из одной панели. */
+.order-dock {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 55;
+  max-width: 560px;
+  min-height: var(--order-dock-height);
+  margin-inline: auto;
+  display: grid;
+  align-items: stretch;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 8px;
+  padding: 9px 12px calc(9px + env(safe-area-inset-bottom, 0px));
+  background: #100b19;
+  border: 1px solid var(--ln);
+  border-bottom: 0;
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -10px 26px #08040e75;
+}
+
+.order-app .order-dock button {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 2px 7px;
+  padding: 8px 6px;
+  border: 1px solid #c9a7ff50;
+  border-radius: 12px;
+  color: #fff;
+  font-size: clamp(12px, 3.5vw, 14px);
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.order-dock-history {
+  background: #21152f;
+}
+
+.order-dock-cart {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(115deg, #7e22dc, #b633d0);
+}
+
+.order-dock-cart::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 30%, #ffffff44, transparent 70%);
+  transform: translateX(-120%);
+  animation: sh 5.5s ease-in-out infinite;
+}
+
+.order-dock-cart strong {
+  white-space: nowrap;
+}
+
+.dock-count {
+  min-width: 20px;
+  padding: 3px 5px;
+  border-radius: 20px;
+  background: #3a2453;
+  color: #f0e4ff;
+  font-size: 11px;
+}
+
+.order-app .club-alert,
+.order-app .club-toast {
+  bottom: calc(var(--order-dock-height) + 12px + env(safe-area-inset-bottom, 0px));
+}
+
+.order-app .cart-row > div:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.visit-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.visit-toolbar button,
+.visit-end {
+  min-height: 44px;
+}
+
+.visit-hint {
+  margin-bottom: 12px;
+}
+
+.visit-end,
+.visit-confirm {
+  margin-top: 16px;
+}
+
+.order-app .guest-ticket li > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.order-app .order-photos {
+  grid-template-columns: repeat(2, 45px);
+  grid-template-rows: none;
+  grid-auto-rows: 45px;
+}
+
+.order-app .order-photos:has(> :only-child) {
+  grid-template-columns: 54px;
+  grid-auto-rows: 54px;
+}
+
+/* Сенсорные экраны: короткая шапка и список с фото без размытия. */
+@media (max-width: 820px), (hover: none) {
+  .order-app .btn::after,
+  .order-app .gl::before {
+    display: none;
+  }
+}
+
+@media (max-width: 820px), (hover: none) and (max-width: 980px) {
+  .order-app .w {
+    padding-inline: max(14px, env(safe-area-inset-left, 0px))
+      max(14px, env(safe-area-inset-right, 0px));
+  }
+
+  .order-app .bar {
+    position: sticky;
+    padding-block: 6px;
+  }
+
+  .order-app .chs {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    margin: 6px 0 0;
+    padding: 0;
+    gap: 6px;
+    scrollbar-width: thin;
+  }
+
+  .order-app .club-notice {
+    margin-bottom: 12px;
+    padding: 10px 12px;
+  }
+
+  .order-app .order-featured,
+  .order-app .mh2 .no,
+  .order-app .menu-line s {
+    display: none;
+  }
+
+  .order-app .mg {
+    padding-top: 12px;
+    column-count: 1;
+  }
+
+  .order-app .mc {
+    margin-bottom: 12px;
+    scroll-margin-top: 86px;
+  }
+
+  .order-app .ms {
+    padding: 12px;
+    border-radius: 16px;
+    background: var(--order-surface);
+  }
+
+  .order-app .mh2 {
+    gap: 6px;
+    margin-bottom: 4px;
+    padding-bottom: 9px;
+  }
+
+  .order-app .mh2 h3 {
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  .order-app .menu-line {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 8px;
+    border-radius: 0;
+    margin: 0;
+    padding: 9px 0;
+  }
+
+  .order-app .menu-line + .menu-line {
+    border-top: 1px solid var(--ln);
+  }
+
+  .order-app .menu-line:hover {
+    transform: none;
+    background: transparent;
+  }
+
+  .order-app .menu-line-title {
+    min-width: 0;
+    grid-row: span 2;
+  }
+
+  .order-app .menu-item-name {
+    min-height: var(--order-touch);
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 14px;
+    line-height: 1.25;
+  }
+
+  .order-app .menu-thumb {
+    display: block;
+    width: 44px;
+    height: 44px;
+    flex: none;
+    border-radius: 8px;
+    object-fit: cover;
+  }
+
+  .order-app .menu-line .line-price,
+  .order-app .menu-line-action {
+    grid-column: 2;
+    justify-self: end;
+  }
+
+  .order-app .club-dialog {
+    max-height: calc(
+      100dvh - 20px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+    );
+  }
+
+  .order-app .visit-dialog .guest-ticket {
+    padding: 13px;
+  }
+
+  .order-app .visit-dialog .guest-ticket-heading {
+    gap: 8px;
+  }
+}
+
+@media (hover: none) and (orientation: landscape) and (max-height: 480px) {
+  .order-app .bar {
+    position: static;
+  }
+
+  .order-app .mc {
+    scroll-margin-top: 0;
+  }
+}
+
+@media (hover: none) and (prefers-reduced-motion: no-preference) {
+  .order-app [data-m]:active {
+    scale: 0.97;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .order-app .menu-line[data-enter],
+  .order-app .scatter .pic {
+    opacity: 1;
+    transform: none;
+  }
+}

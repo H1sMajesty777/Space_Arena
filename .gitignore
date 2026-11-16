@@ -1,0 +1,11 @@
+.env
+__pycache__/
+*.py[cod]
+.venv/
+node_modules/
+frontend/dist/
+backend/uploads/
+
+tls/
+demo/desktop.jpg
+demo/preview*.png

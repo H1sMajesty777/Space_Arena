@@ -1,0 +1,12 @@
+{
+  "kitchen": {
+    "opens": "11:00",
+    "closes": "22:20",
+    "time_zone": "Europe/Moscow",
+    "time_zone_label": "по Москве"
+  },
+  "orders": {
+    "max_lines": 50,
+    "max_quantity_per_variant": 50
+  }
+}

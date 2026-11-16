@@ -1,0 +1,11 @@
+services:
+  api:
+    ports: !override
+      - "127.0.0.1:18000:8000"
+    environment:
+      PUBLIC_ORIGIN: "http://localhost:18080"
+      ALLOW_INSECURE_LOCAL: "true"
+      CORS_ORIGINS: "http://localhost:18080,http://127.0.0.1:18080"
+  web:
+    ports: !override
+      - "127.0.0.1:18080:80"

@@ -1,0 +1,11 @@
+services:
+  web:
+    ports: !override
+      - "443:443"
+    volumes:
+      - ./deploy/nginx.production.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./tls:/etc/nginx/tls:ro
+  api:
+    ports: !reset []
+    environment:
+      ALLOW_INSECURE_LOCAL: "false"

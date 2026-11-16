@@ -1,0 +1,13 @@
+.env
+.git
+frontend/node_modules
+frontend/dist
+backend/*
+!backend/club-settings.json
+agent
+banner
+docs
+demo
+scripts/*
+!scripts/sync-kitchen-hours.mjs
+*.log
