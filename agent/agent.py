@@ -1,40 +1,67 @@
 """Windows-агент. Секрет зашифрован DPAPI для текущей учётной записи."""
+
 import ipaddress
 import json
 import logging
 import os
+import sys
 import threading
 import time
-import sys
+import tkinter as tk
 import webbrowser
 from ctypes.wintypes import MSG
+from datetime import datetime
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
-from datetime import datetime
 from pathlib import Path
+from tkinter import messagebox, simpledialog
 from urllib.error import HTTPError
 from urllib.parse import urlsplit
-from urllib.request import Request, build_opener, HTTPRedirectHandler
-import tkinter as tk
-from tkinter import simpledialog, messagebox
-import win32crypt
+from urllib.request import HTTPRedirectHandler, Request, build_opener
+
 import win32api
-import win32event
-import winerror
 import win32con
+import win32crypt
+import win32event
 import win32gui
 import win32ts
-
-from watchdog import EXIT_SETUP_REQUIRED
+import winerror
 from PySide6.QtCore import Qt, QTimer, QUrl, Signal
-from PySide6.QtWidgets import QApplication
 from PySide6.QtWebEngineCore import QWebEnginePage
 from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtWidgets import QApplication
 
-SETTINGS = Path(os.environ["LOCALAPPDATA"]) / "SpaceArena" / "device.bin"
-BANNER = Path(__file__).resolve().parent / "banner"
-OVERLAY_SETTLE_DELAY_SECONDS = 5
-OVERLAY_DISCARD_DELAY_SECONDS = 60
+from watchdog import EXIT_SETUP_REQUIRED
+
+
+# Настройки баннера. Координаты и отступы указаны в процентах от размера основного экрана.
+BANNER_WINDOW_TITLE = "Space Arena Banner"
+BANNER_LEFT_PERCENT = 51.0
+BANNER_TOP_PERCENT = 8.3
+BANNER_RIGHT_MARGIN_PERCENT = 2.1
+BANNER_BOTTOM_PERCENT = 59.0
+
+# Полноэкранный режим и разблокировка Windows.
+FULLSCREEN_CHECK_INTERVAL_MS = 250
+UNLOCK_REPLAY_DELAY_MS = 350
+OVERLAY_SETTLE_DELAY_SECONDS = 5  # Завершить заставку и приостановить анимацию.
+OVERLAY_DISCARD_DELAY_SECONDS = 60  # Скрыть баннер и выгрузить его страницу.
+
+# Связь с сервером и обновление QR. Срок действия ссылки задаёт сервер.
+API_TIMEOUT_SECONDS = 15
+ACCESS_CHECK_INTERVAL_SECONDS = 30
+RETRY_DELAY_SECONDS = 30
+QR_REFRESH_BEFORE_EXPIRY_SECONDS = 60
+MIN_ACCESS_CHECK_DELAY_SECONDS = 1
+MIN_QR_REFRESH_DELAY_SECONDS = 5
+
+
+# Служебные пути и идентификаторы Windows.
+DEVICE_SETTINGS_PATH = Path(os.environ["LOCALAPPDATA"]) / "SpaceArena" / "device.bin"
+BANNER_DIRECTORY = Path(__file__).resolve().parent / "banner"
+BANNER_BIND_HOST = "127.0.0.1"  # Страница баннера доступна только на этом ПК.
+AGENT_MUTEX_NAME = r"Local\SpaceArenaOrdersAgent"
+
 WM_WTSSESSION_CHANGE = 0x02B1
 WTS_SESSION_LOCK = 0x7
 WTS_SESSION_UNLOCK = 0x8
@@ -45,40 +72,54 @@ class BannerHandler(SimpleHTTPRequestHandler):
 
     current = None
 
+    @property
+    def local_host(self):
+        return f"{BANNER_BIND_HOST}:{self.server.server_port}"
+
     def do_GET(self):
-        if self.headers.get("Host") != f"127.0.0.1:{self.server.server_port}":
+        if self.headers.get("Host") != self.local_host:
             self.send_error(403)
             return
-        if self.path == "/api/current":
-            current = self.current.copy()
-            valid = current["url"] and time.time() < current["expires"]
-            payload = json.dumps({"order_url": current["url"] if valid else None,
-                                  "expires_at": current["expires"], "status": current["status"]}).encode()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Cache-Control", "no-store")
-            self.send_header("Content-Length", str(len(payload)))
-            self.end_headers()
-            self.wfile.write(payload)
+        if self.path != "/api/current":
+            super().do_GET()
             return
-        super().do_GET()
+
+        link = self.current.copy()
+        payload = json.dumps({
+            "order_url": self.active_order_url(link),
+            "expires_at": link["expires_at"],
+            "status": link["status"],
+        }).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
 
     def do_POST(self):
-        host = f"127.0.0.1:{self.server.server_port}"
-        if self.headers.get("Host") != host or self.headers.get("Origin") not in (None, f"http://{host}"):
+        host = self.local_host
+        origin = self.headers.get("Origin")
+        if self.headers.get("Host") != host or origin not in (None, f"http://{host}"):
             self.send_error(403)
             return
         if self.path != "/api/open-order":
             self.send_error(404)
             return
-        current = self.current.copy()
-        if not current["url"] or time.time() >= current["expires"]:
+        order_url = self.active_order_url(self.current.copy())
+        if not order_url:
             self.send_error(403, "QR expired")
             return
-        webbrowser.open(current["url"])
+        webbrowser.open(order_url)
         self.send_response(204)
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
+
+    @staticmethod
+    def active_order_url(link):
+        if link["order_url"] and time.time() < link["expires_at"]:
+            return link["order_url"]
+        return None
 
     def log_message(self, *args):
         pass  # Не записываем временные ссылки в журналы.
@@ -96,39 +137,134 @@ def valid_origin(url):
         local = address.is_private or address.is_loopback
     except ValueError:
         local = parsed.hostname == "localhost"
-    return (parsed.scheme == "https" or (parsed.scheme == "http" and local)) and parsed.path in ("", "/") and not parsed.query and not parsed.fragment and not parsed.username
+    allowed_scheme = parsed.scheme == "https" or (parsed.scheme == "http" and local)
+    return (
+        allowed_scheme
+        and parsed.path in ("", "/")
+        and not parsed.query
+        and not parsed.fragment
+        and not parsed.username
+    )
 
 
 def load_config(root):
-    if SETTINGS.exists() and "--configure" not in sys.argv:
+    if DEVICE_SETTINGS_PATH.exists() and "--configure" not in sys.argv:
         try:
-            return json.loads(win32crypt.CryptUnprotectData(SETTINGS.read_bytes(), None, None, None, 0)[1])
+            encrypted = DEVICE_SETTINGS_PATH.read_bytes()
+            _, payload = win32crypt.CryptUnprotectData(encrypted, None, None, None, 0)
+            return json.loads(payload)
         except Exception:
-            messagebox.showerror("SPACE ARENA", "Не удалось прочитать настройки устройства. Настройте подключение заново.")
-    origin = simpledialog.askstring("Подключение ПК", "Адрес сервера, например http://192.168.0.134:8080", parent=root)
+            messagebox.showerror(
+                "SPACE ARENA",
+                "Не удалось прочитать настройки устройства. Настройте подключение заново.",
+            )
+    return enroll_device(root)
+
+
+def enroll_device(root):
+    origin = simpledialog.askstring(
+        "Подключение ПК", "Адрес сервера, например http://192.168.0.134:8080", parent=root,
+    )
     if not origin or not valid_origin(origin.strip()):
         raise ValueError("Укажите HTTPS-адрес или локальный IP с портом, без пути")
-    secret = simpledialog.askstring("Подключение ПК", "Одноразовый код подключения из панели администратора", show="*", parent=root)
-    if not secret:
+    enrollment_code = simpledialog.askstring(
+        "Подключение ПК", "Одноразовый код подключения из панели администратора",
+        show="*", parent=root,
+    )
+    if not enrollment_code:
         raise ValueError("Секрет не указан")
     origin = origin.strip().rstrip("/")
-    request = Request(origin + "/api/pc/enroll", data=json.dumps({"code": secret.strip()}).encode(), headers={"Content-Type": "application/json"})
+    request = Request(
+        origin + "/api/pc/enroll",
+        data=json.dumps({"code": enrollment_code.strip()}).encode(),
+        headers={"Content-Type": "application/json"},
+    )
     try:
-        with build_opener(NoRedirect()).open(request, timeout=15) as response:
+        with build_opener(NoRedirect()).open(request, timeout=API_TIMEOUT_SECONDS) as response:
             device = json.load(response)
-    except Exception:
-        raise ValueError("Не удалось подключить ПК. Проверьте сервер и получите свежий код.")
+    except Exception as error:
+        raise ValueError("Не удалось подключить ПК. Проверьте сервер и получите свежий код.") from error
+
     config = {"origin": origin, "secret": device["device_secret"]}
-    SETTINGS.parent.mkdir(parents=True, exist_ok=True)
-    SETTINGS.write_bytes(win32crypt.CryptProtectData(json.dumps(config).encode(), "Space Arena", None, None, None, 0))
+    payload = json.dumps(config).encode()
+    encrypted = win32crypt.CryptProtectData(payload, "Space Arena", None, None, None, 0)
+    DEVICE_SETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    DEVICE_SETTINGS_PATH.write_bytes(encrypted)
     return config
+
+
+def update_guest_link(config, current, stop):
+    """Проверяет доступ стола и обновляет временную ссылку в фоновом потоке."""
+    opener = build_opener(NoRedirect())
+    refresh_at = 0
+    access_version = None
+
+    while not stop.is_set():
+        delay = RETRY_DELAY_SECONDS
+        try:
+            origin = config["origin"]
+            headers = {"Authorization": "Device " + config["secret"]}
+            if time.time() < refresh_at:
+                request = Request(origin + "/api/pc/status", headers=headers)
+                with opener.open(request, timeout=API_TIMEOUT_SECONDS) as response:
+                    latest_version = json.load(response).get("access_version")
+
+                if latest_version == access_version:
+                    seconds_until_refresh = refresh_at - time.time()
+                    delay = min(
+                        ACCESS_CHECK_INTERVAL_SECONDS,
+                        max(MIN_ACCESS_CHECK_DELAY_SECONDS, seconds_until_refresh),
+                    )
+                    stop.wait(delay)
+                    continue
+
+                # Версия изменилась, старый QR больше не действует.
+                current.update(order_url=None, expires_at=0, status="Обновляем QR…")
+
+            request = Request(origin + "/api/pc/qr-token", headers=headers)
+            with opener.open(request, timeout=API_TIMEOUT_SECONDS) as response:
+                result = json.load(response)
+
+            expires_at = datetime.fromisoformat(result["expires_at"]).timestamp()
+            order_url = result["order_url"]
+            target = urlsplit(order_url)
+            target_origin = f"{target.scheme}://{target.netloc}"
+            if not valid_origin(target_origin) or target.path != "/order":
+                raise ValueError("Unexpected order URL")
+
+            # В QR попадёт готовая ссылка API с публичным адресом из PUBLIC_ORIGIN.
+            current.update(
+                order_url=order_url,
+                expires_at=expires_at,
+                status="Отсканируйте QR или нажмите на баннер",
+            )
+            access_version = result.get("access_version")
+            refresh_at = expires_at - QR_REFRESH_BEFORE_EXPIRY_SECONDS
+            seconds_until_refresh = refresh_at - time.time()
+            delay = min(
+                ACCESS_CHECK_INTERVAL_SECONDS,
+                max(MIN_QR_REFRESH_DELAY_SECONDS, seconds_until_refresh),
+            )
+        except HTTPError as error:
+            refresh_at = 0
+            if error.code in (401, 403):
+                status = "Компьютер отключён. Обратитесь к сотруднику клуба."
+            else:
+                status = "Сервис временно недоступен. Повторяем подключение…"
+            current.update(order_url=None, expires_at=0, status=status)
+        except Exception:
+            refresh_at = 0
+            current.update(
+                order_url=None, expires_at=0,
+                status="Нет связи с сервером. Повторяем подключение…",
+            )
+        stop.wait(delay)
 
 
 def lower_overlay(handle):
     """Держим баннер ниже обычных окон."""
-    win32gui.SetWindowPos(handle, win32con.HWND_BOTTOM, 0, 0, 0, 0,
-                          win32con.SWP_NOMOVE | win32con.SWP_NOSIZE |
-                          win32con.SWP_NOACTIVATE)
+    flags = win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_NOACTIVATE
+    win32gui.SetWindowPos(handle, win32con.HWND_BOTTOM, 0, 0, 0, 0, flags)
 
 
 def foreground_is_fullscreen(handle):
@@ -138,12 +274,13 @@ def foreground_is_fullscreen(handle):
     if win32gui.GetClassName(foreground) in {"Progman", "WorkerW", "Shell_TrayWnd"}:
         return False
     style = win32gui.GetWindowLong(foreground, win32con.GWL_STYLE)
-    if style & win32con.WS_MAXIMIZE and style & win32con.WS_CAPTION == win32con.WS_CAPTION:
+    has_title_bar = (style & win32con.WS_CAPTION) == win32con.WS_CAPTION
+    if style & win32con.WS_MAXIMIZE and has_title_bar:
         return False
     monitor = win32api.MonitorFromWindow(handle, win32con.MONITOR_DEFAULTTONEAREST)
-    ml, mt, mr, mb = win32api.GetMonitorInfo(monitor)["Monitor"]
+    screen_left, screen_top, screen_right, screen_bottom = win32api.GetMonitorInfo(monitor)["Monitor"]
     left, top, right, bottom = win32gui.GetWindowRect(foreground)
-    return left <= ml and top <= mt and right >= mr and bottom >= mb
+    return left <= screen_left and top <= screen_top and right >= screen_right and bottom >= screen_bottom
 
 
 class SessionOverlay(QWebEngineView):
@@ -173,7 +310,8 @@ class SessionOverlay(QWebEngineView):
     def nativeEvent(self, event_type, message):
         if event_type == b"windows_generic_MSG":
             event = MSG.from_address(int(message))
-            if event.message == WM_WTSSESSION_CHANGE and event.wParam in (WTS_SESSION_LOCK, WTS_SESSION_UNLOCK):
+            is_lock_change = event.wParam in (WTS_SESSION_LOCK, WTS_SESSION_UNLOCK)
+            if event.message == WM_WTSSESSION_CHANGE and is_lock_change:
                 self.session_lock_changed.emit(event.wParam == WTS_SESSION_LOCK)
                 return True, 0
         return super().nativeEvent(event_type, message)
@@ -185,7 +323,7 @@ class SessionOverlay(QWebEngineView):
 
 def create_overlay(url):
     window = SessionOverlay()
-    window.setWindowTitle("Space Arena Banner")
+    window.setWindowTitle(BANNER_WINDOW_TITLE)
     window.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool)
     window.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
     window.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
@@ -193,18 +331,23 @@ def create_overlay(url):
     window.page().setBackgroundColor(Qt.GlobalColor.transparent)
 
     screen = QApplication.primaryScreen().geometry()
-    # Отступы выравнивают окно по рамкам на клубных обоях.
-    left = round(screen.width() * 0.51)
-    top = round(screen.height() * 0.083)
-    right_margin = round(screen.width() * 0.021)
-    bottom = round(screen.height() * 0.59)
-    window.setGeometry(screen.x() + left, screen.y() + top,
-                       screen.width() - left - right_margin, bottom - top)
+    screen_width = screen.width()
+    screen_height = screen.height()
+    left = round(screen_width * (BANNER_LEFT_PERCENT / 100))
+    top = round(screen_height * (BANNER_TOP_PERCENT / 100))
+    right_margin = round(screen_width * (BANNER_RIGHT_MARGIN_PERCENT / 100))
+    bottom = round(screen_height * (BANNER_BOTTOM_PERCENT / 100))
+    window.setGeometry(
+        screen.x() + left,
+        screen.y() + top,
+        screen_width - left - right_margin,
+        bottom - top,
+    )
     window.load(QUrl(url))
     return window
 
 
-def finish_overlay_intro(page):
+def pause_overlay_animation(page):
     page.runJavaScript("""
         for (const animation of document.getAnimations()) {
             if (Number.isFinite(animation.effect.getComputedTiming().endTime)) {
@@ -212,6 +355,7 @@ def finish_overlay_intro(page):
             }
         }
     """)
+    set_overlay_motion(page, False)
 
 
 def set_overlay_motion(page, enabled):
@@ -219,18 +363,18 @@ def set_overlay_motion(page, enabled):
     page.runJavaScript(f'document.documentElement.toggleAttribute("data-motion-paused", {paused})')
 
 
-def configure_overlay_replay(window, handle):
+def watch_overlay_visibility(window, handle):
     page = window.page()
     lifecycle = QWebEnginePage.LifecycleState
     fullscreen_since = None
-    settled = False
-    locked = False
+    animation_paused = False
+    session_locked = False
 
     fullscreen_timer = QTimer(window)
-    fullscreen_timer.setInterval(250)
+    fullscreen_timer.setInterval(FULLSCREEN_CHECK_INTERVAL_MS)
     unlock_timer = QTimer(window)
     unlock_timer.setSingleShot(True)
-    unlock_timer.setInterval(350)
+    unlock_timer.setInterval(UNLOCK_REPLAY_DELAY_MS)
 
     def restore_overlay():
         if page.lifecycleState() == lifecycle.Discarded:
@@ -242,8 +386,8 @@ def configure_overlay_replay(window, handle):
         lower_overlay(handle)
 
     def check_fullscreen():
-        nonlocal fullscreen_since, settled
-        if locked:
+        nonlocal fullscreen_since, animation_paused
+        if session_locked:
             return True
         try:
             fullscreen = foreground_is_fullscreen(handle)
@@ -252,11 +396,12 @@ def configure_overlay_replay(window, handle):
             return fullscreen_since is not None
 
         if not fullscreen:
-            was_settled = settled
-            fullscreen_since, settled = None, False
+            was_paused = animation_paused
+            fullscreen_since = None
+            animation_paused = False
             if window.isHidden() and not unlock_timer.isActive():
                 restore_overlay()
-            elif was_settled and window.isVisible():
+            elif was_paused and window.isVisible():
                 set_overlay_motion(page, True)
             return False
 
@@ -264,10 +409,9 @@ def configure_overlay_replay(window, handle):
         if fullscreen_since is None:
             fullscreen_since = now
         elapsed = now - fullscreen_since
-        if elapsed >= OVERLAY_SETTLE_DELAY_SECONDS and not settled:
-            settled = True
-            finish_overlay_intro(page)
-            set_overlay_motion(page, False)
+        if elapsed >= OVERLAY_SETTLE_DELAY_SECONDS and not animation_paused:
+            animation_paused = True
+            pause_overlay_animation(page)
         if elapsed >= OVERLAY_DISCARD_DELAY_SECONDS:
             if window.isVisible():
                 window.hide()
@@ -282,16 +426,15 @@ def configure_overlay_replay(window, handle):
             window.reload()
 
     def on_load_finished(loaded):
-        if locked or unlock_timer.isActive():
+        if session_locked or unlock_timer.isActive():
             return
-        if check_fullscreen() and settled and loaded and window.isVisible():
-            finish_overlay_intro(page)
-            set_overlay_motion(page, False)
+        if check_fullscreen() and animation_paused and loaded and window.isVisible():
+            pause_overlay_animation(page)
 
     def on_session_lock_changed(is_locked):
-        nonlocal fullscreen_since, locked
-        locked = is_locked
-        if locked:
+        nonlocal fullscreen_since, session_locked
+        session_locked = is_locked
+        if session_locked:
             fullscreen_timer.stop()
             unlock_timer.stop()
         else:
@@ -308,71 +451,34 @@ def configure_overlay_replay(window, handle):
 
 
 def run():
-    # Окно настройки создаётся только при первом подключении и затем закрывается.
+    # Скрытое окно Tk нужно для диалогов настройки.
     setup = tk.Tk()
     setup.withdraw()
     try:
         config = load_config(setup)
     except Exception as issue:
         messagebox.showerror("Настройка SPACE ARENA", str(issue), parent=setup)
-        setup.destroy()
         return EXIT_SETUP_REQUIRED
-    setup.destroy()
+    finally:
+        setup.destroy()
 
-    if not BANNER.joinpath("index.html").exists():
+    if not (BANNER_DIRECTORY / "index.html").exists():
         messagebox.showerror("SPACE ARENA", "Не найдены файлы баннера. Переустановите агент.")
         return EXIT_SETUP_REQUIRED
 
     stop = threading.Event()
-    current = {"url": None, "expires": 0, "status": "Подключаемся…"}
+    current = {"order_url": None, "expires_at": 0, "status": "Подключаемся…"}
     BannerHandler.current = current
-    server = ThreadingHTTPServer(("127.0.0.1", 0), partial(BannerHandler, directory=str(BANNER)))
+    handler = partial(BannerHandler, directory=str(BANNER_DIRECTORY))
+    # Порт 0 позволяет Windows выбрать свободный порт при каждом запуске.
+    server = ThreadingHTTPServer((BANNER_BIND_HOST, 0), handler)
     threading.Thread(target=server.serve_forever, daemon=True).start()
-
-    def worker():
-        opener = build_opener(NoRedirect())
-        refresh_at = 0
-        access_version = None
-        while not stop.is_set():
-            delay = 30
-            try:
-                if time.time() < refresh_at:
-                    heartbeat = Request(config["origin"] + "/api/pc/status",
-                                        headers={"Authorization": "Device " + config["secret"]})
-                    with opener.open(heartbeat, timeout=15) as response:
-                        latest_version = json.load(response).get("access_version")
-                    if latest_version == access_version:
-                        stop.wait(min(30, max(1, refresh_at - time.time())))
-                        continue
-                    current.update(url=None, expires=0, status="Обновляем QR…")
-                request = Request(config["origin"] + "/api/pc/qr-token",
-                                  headers={"Authorization": "Device " + config["secret"]})
-                with opener.open(request, timeout=15) as response:
-                    result = json.load(response)
-                expires = datetime.fromisoformat(result["expires_at"]).timestamp()
-                target = urlsplit(result["order_url"])
-                if not valid_origin(target.scheme + "://" + target.netloc) or target.path != "/order":
-                    raise ValueError("Unexpected origin")
-                current.update(url=result["order_url"], expires=expires,
-                               status="Отсканируйте QR или нажмите на баннер")
-                access_version = result.get("access_version")
-                refresh_at = expires - 60
-                delay = min(30, max(5, refresh_at - time.time()))
-            except HTTPError as issue:
-                refresh_at = 0
-                text = ("Компьютер отключён. Обратитесь к сотруднику клуба." if issue.code in (401, 403)
-                        else "Сервис временно недоступен. Повторяем подключение…")
-                current.update(url=None, expires=0, status=text)
-            except Exception:
-                refresh_at = 0
-                current.update(url=None, expires=0, status="Нет связи с сервером. Повторяем подключение…")
-            stop.wait(delay)
 
     try:
         app = QApplication([])
-        app.setApplicationName("Space Arena Banner")
-        app.setApplicationDisplayName("Space Arena Banner")
-        window = create_overlay(f"http://127.0.0.1:{server.server_port}/")
+        app.setApplicationName(BANNER_WINDOW_TITLE)
+        app.setApplicationDisplayName(BANNER_WINDOW_TITLE)
+        window = create_overlay(f"http://{BANNER_BIND_HOST}:{server.server_port}/")
         window.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         window.destroyed.connect(app.quit)
         window.show()
@@ -380,8 +486,8 @@ def run():
         lower_overlay(handle)
 
         app.aboutToQuit.connect(window.unwatch_session)
-        configure_overlay_replay(window, handle)
-        threading.Thread(target=worker, daemon=True).start()
+        watch_overlay_visibility(window, handle)
+        threading.Thread(target=update_guest_link, args=(config, current, stop), daemon=True).start()
         return app.exec()
     finally:
         stop.set()
@@ -390,9 +496,7 @@ def run():
 
 
 if __name__ == "__main__":
-    mutex = win32event.CreateMutex(None, False, "Local\\SpaceArenaOrdersAgent")
+    mutex = win32event.CreateMutex(None, False, AGENT_MUTEX_NAME)
     if win32api.GetLastError() != winerror.ERROR_ALREADY_EXISTS:
         sys.exit(run())
     sys.exit(EXIT_SETUP_REQUIRED)
-
-

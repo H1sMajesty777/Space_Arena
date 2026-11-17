@@ -3,6 +3,9 @@ import { QRCodeSVG } from "qrcode.react";
 
 type GuestLink = { order_url: string | null; expires_at: number; status: string };
 
+const LINK_POLL_INTERVAL_MS = 5000;
+const QR_QUIET_ZONE_MODULES = 4;
+
 function useGuestLink() {
   const [link, setLink] = useState<GuestLink>({ order_url: null, expires_at: 0, status: "Подключаемся…" });
   useEffect(() => {
@@ -19,7 +22,7 @@ function useGuestLink() {
       }
     }
     void refresh();
-    const timer = window.setInterval(refresh, 5000);
+    const timer = window.setInterval(refresh, LINK_POLL_INTERVAL_MS);
     document.addEventListener("visibilitychange", refresh);
     return () => {
       mounted = false;
@@ -27,7 +30,10 @@ function useGuestLink() {
       document.removeEventListener("visibilitychange", refresh);
     };
   }, []);
-  return link.order_url && Date.now() < link.expires_at * 1000 ? link : { ...link, order_url: null };
+  if (link.order_url && Date.now() >= link.expires_at * 1000) {
+    return { ...link, order_url: null, status: "Обновляем QR…" };
+  }
+  return link;
 }
 
 // Фиксированное небо без одинаковых рядов, с разными размерами и яркостью звёзд.
@@ -101,12 +107,33 @@ function App() {
         <div className="frame-corner frame-corner--br" />
 
         <div className="guest-access">
-          <div className="guest-qr">{guest.order_url ? <QRCodeSVG value={guest.order_url} size={112} level="M" marginSize={1} /> : <span>QR<br />недоступен</span>}</div>
-          <div className="guest-access-text"><strong>МЕНЮ И ЗАКАЗ</strong><span>{guest.order_url ? "Наведите камеру или нажмите на баннер" : guest.status}</span></div>
+          <div className="guest-qr">
+            {guest.order_url ? (
+              <QRCodeSVG
+                value={guest.order_url}
+                title="QR-код для заказа"
+                size={112}
+                level="M"
+                marginSize={QR_QUIET_ZONE_MODULES}
+              />
+            ) : (
+              <span>QR<br />недоступен</span>
+            )}
+          </div>
+          <div className="guest-access-text">
+            <strong>МЕНЮ И ЗАКАЗ</strong>
+            <span>{guest.order_url ? "Наведите камеру или нажмите на баннер" : guest.status}</span>
+          </div>
         </div>
 
-        {guest.order_url && <button className="order-hitbox" type="button" onClick={openOrder} aria-label="Открыть меню и заказать" />}
-
+        {guest.order_url && (
+          <button
+            className="order-hitbox"
+            type="button"
+            onClick={openOrder}
+            aria-label="Открыть меню и заказать"
+          />
+        )}
       </div>
     </main>
   );
