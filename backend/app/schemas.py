@@ -128,6 +128,7 @@ class OrderOut(BaseModel):
     note: str | None
     status: str
     created_at: datetime
+    paid_at: datetime | None
     items: list[OrderItemOut]
 
 

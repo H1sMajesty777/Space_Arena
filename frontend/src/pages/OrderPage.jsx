@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { request } from '../api/client';
-import { CheckoutDialog } from '../components/CheckoutDialog';
+import { Checkout } from '../components/Checkout';
 import { Menu } from '../components/Menu';
 import { ItemDetails } from '../components/ItemChoices';
 import { GuestOrders } from '../components/GuestOrders';
-import { Modal } from '../components/Modal';
+import { placeName } from '../config/floor';
 import {
   GUEST_REFRESH_MS,
   MAX_ORDER_LINES,
@@ -19,7 +19,7 @@ import {
   unavailableLabel,
 } from '../config/menu';
 import { usePolling } from '../hooks/usePolling';
-import { useMagneticButtons } from '../hooks/useMagneticButtons';
+import { useOrderView } from '../hooks/useOrderView';
 
 const CART_STORAGE_KEY = 'space-cart';
 
@@ -61,22 +61,30 @@ function sharedRows(snapshot, itemsById) {
 }
 
 export function OrderPage() {
-  useMagneticButtons();
+  const header = useRef(null);
+  useEffect(() => {
+    const root = document.documentElement;
+    const update = () =>
+      root.style.setProperty('--order-header-height', `${header.current.offsetHeight}px`);
+    const observer = new ResizeObserver(update);
+    observer.observe(header.current);
+    update();
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty('--order-header-height');
+    };
+  }, []);
+  const { view, navigate, back, progress } = useOrderView();
   const [items, setItems] = useState([]);
   const [localCart, setLocalCart] = useState(readCart);
   const [visitCart, setVisitCart] = useState(null);
   const [orders, setOrders] = useState([]);
   const [session, setSession] = useState(null);
   const table = session?.table_number;
-  const placeLabel = `Столик ${table || '—'}`;
-  const [cartOpen, setCartOpen] = useState(false);
-  const [ordersOpen, setOrdersOpen] = useState(false);
-  const [endOpen, setEndOpen] = useState(false);
-  const [ending, setEnding] = useState(false);
-  const [endError, setEndError] = useState('');
-  const [details, setDetails] = useState(null);
+  const placeLabel = placeName(table);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [accessError, setAccessError] = useState('');
   const [checkoutError, setCheckoutError] = useState('');
   const [online, setOnline] = useState(false);
   const [sending, setSending] = useState(false);
@@ -121,6 +129,7 @@ export function OrderPage() {
       ]);
       if (attempt !== refreshAttempt.current) return;
       setSession(access);
+      setAccessError('');
       setItems(current);
       setOrders(history);
       if (snapshot) acceptCart(snapshot);
@@ -134,9 +143,13 @@ export function OrderPage() {
         setOrders([]);
         setItems([]);
         setVisitCart(null);
-        setOrdersOpen(false);
+        setLocalCart({});
+        setMessage('');
+        setError('');
+        setAccessError(issue.message);
+      } else {
+        setError(issue.message);
       }
-      setError(issue.message);
     }
   }, [acceptCart]);
   usePolling(refresh, GUEST_REFRESH_MS);
@@ -183,11 +196,11 @@ export function OrderPage() {
     if (quantity) next[key] = { item, quantity, selection };
     else delete next[key];
     const issue = await saveCart(next);
-    if (issue) (cartOpen ? setCheckoutError : setError)(issue);
+    if (issue) (view.name === 'cart' ? setCheckoutError : setError)(issue);
   }
 
   async function saveSelection(item, selection, amount, previousKey) {
-    if (previousKey && sharedCart && details.revision !== sharedCart.revision) {
+    if (previousKey && sharedCart && view.editRevision !== sharedCart.revision) {
       return 'Корзина изменилась на другом устройстве. Откройте позицию заново.';
     }
     const key = cartKey(item.id, selection);
@@ -230,8 +243,9 @@ export function OrderPage() {
   const orderEnabled = Boolean(table && online && (!session?.visit_id || sharedCart));
   const canEdit = orderEnabled && !sending && !cartBusy;
   const canSubmit = canEdit && !hasBlocked && rows.length > 0 && rows.length <= MAX_ORDER_LINES;
-  const currentDetails =
-    details && (itemsById.get(details.item.id) || { ...details.item, is_available: false });
+  const editingRow = view.name === 'item' && view.rowKey;
+  const detailRow = editingRow && rows.find((row) => row.key === editingRow);
+  const detailItem = view.name === 'item' && itemsById.get(view.itemId);
 
   async function removeUnavailable() {
     const availableKeys = rows.filter((row) => !row.unavailable).map((row) => row.key);
@@ -242,11 +256,7 @@ export function OrderPage() {
   /* ---------- Отправка заказа ---------- */
   function openCart() {
     setCheckoutError('');
-    setCartOpen(true);
-  }
-
-  function closeCart() {
-    if (!sending) setCartOpen(false);
+    navigate('cart');
   }
 
   async function submitOrder(event) {
@@ -270,8 +280,7 @@ export function OrderPage() {
       else setLocalCart({});
       refreshAttempt.current++;
       setOrders((previous) => [order, ...previous.filter((item) => item.id !== order.id)]);
-      setCartOpen(false);
-      setOrdersOpen(true);
+      navigate('orders', { replace: true });
       setMessage(`Заказ №${order.id} отправлен в бар`);
     } catch (issue) {
       setCheckoutError(
@@ -286,214 +295,271 @@ export function OrderPage() {
     }
   }
 
-  async function finishVisit() {
-    setEnding(true);
-    setEndError('');
-    try {
-      await request('/api/session/end', { method: 'POST' });
-      refreshAttempt.current++;
-      setSession(null);
-      setOnline(false);
-      setVisitCart(null);
-      setOrders([]);
-      setEndOpen(false);
-      setOrdersOpen(false);
-      setError('');
-      setMessage('Визит завершён. Новый QR появится на ПК после обновления баннера.');
-    } catch (issue) {
-      setEndError(issue.message);
-    } finally {
-      setEnding(false);
-    }
-  }
+  const shopView =
+    table && !accessError ? view.name : view.name === 'item' && !accessError ? 'item' : 'menu';
+  const kitchenClosed = items.some((item) => item.unavailable_reason === 'kitchen_closed');
+  const menuAction = () => back('menu');
+  const orderAction = () => navigate('orders');
+  const cartAction = shopView === 'cart' ? undefined : openCart;
+  const backFromItem = () => back(editingRow ? 'cart' : 'menu');
 
   return (
     <>
-      <header className="hd order-header">
-        <div className="w order-header-inner">
-          <img src="/assets/logo.png" alt="SPACE ARENA" className="club-logo" />
-          {table && <span className="order-place">{placeLabel}</span>}
+      <div id="pg" ref={progress} aria-hidden="true" />
+      <header className="hd order-header" ref={header}>
+        <div className="w hi">
+          <a className="header-brand" href="/#home" aria-label="SPACE ARENA — главная">
+            <img src="/assets/logo.png" alt="SPACE ARENA" />
+          </a>
+          <nav aria-label="Основная навигация">
+            <a
+              href="#menu"
+              aria-current={shopView === 'menu' ? 'page' : undefined}
+              onClick={(event) => {
+                event.preventDefault();
+                if (shopView === 'menu') window.scrollTo({ top: 0 });
+                else menuAction();
+              }}
+            >
+              Меню
+            </a>
+          </nav>
+          {table && (
+            <>
+              <button className="btn s o header-menu" onClick={orderAction}>
+                Мои заказы {orders.length > 0 && <span>{orders.length}</span>}
+              </button>
+              <button className="btn s header-booking order-header-cart" onClick={cartAction}>
+                Корзина {quantity > 0 && <span>{quantity}</span>}
+              </button>
+            </>
+          )}
         </div>
       </header>
-      <main id="menuv">
-        <section className="w order-intro">
-          <h1 aria-label="Меню">
+      <main id="menuv" hidden={shopView !== 'menu'} tabIndex={-1}>
+        <section className="mh w order-intro">
+          <p className="eb">SPACE ARENA</p>
+          <h1 className="sp gr" tabIndex={-1} aria-label="Меню">
             {[...'Меню'].map((letter, index) => (
               <span key={letter} className="ch" style={{ '--i': index }} aria-hidden="true">
                 {letter}
               </span>
             ))}
           </h1>
-          <p className="order-kitchen-name">BY GULIANI</p>
-          <img
-            className="order-orbit order-orbit-left"
-            src="/assets/dishes/hachapuriImeretian.jpg"
-            alt=""
-            loading="lazy"
-          />
-          <img
-            className="order-orbit order-orbit-right"
-            src="/assets/dishes/plov.jpg"
-            alt=""
-            loading="lazy"
-          />
-          {items.some((item) => item.unavailable_reason === 'kitchen_closed') ? (
-            <p className="kitchen-status" role="status">
-              <strong>Кухня закрыта.</strong> Доступно меню 24/7.
-            </p>
-          ) : (
-            <p className="kitchen-status">
-              Кухня {KITCHEN_HOURS} {KITCHEN_TIME_ZONE_LABEL}
-            </p>
-          )}
+          <p className="by">BY GULIANI</p>
+          <div className="tg">
+            {table && <span>{placeLabel}</span>}
+            <span>
+              {kitchenClosed
+                ? 'Кухня закрыта · Доступно меню 24/7'
+                : `Кухня ${KITCHEN_HOURS} ${KITCHEN_TIME_ZONE_LABEL}`}
+            </span>
+          </div>
+          <img className="fd a" src="/assets/dishes/hachapuriImeretian.jpg" alt="" />
+          <img className="fd b" src="/assets/dishes/plov.jpg" alt="" />
+          <img className="fd c" src="/assets/dishes/caesar.jpg" alt="" />
         </section>
-        <div className="w">
-          {!table && (error || message) && (
-            <p className="club-notice">
-              Для заказа откройте свежий QR или баннер на компьютере клуба.
+        {(!table && accessError) || (!online && !accessError) ? (
+          <div className="w">
+            <p className="order-notice" role="status">
+              {accessError ||
+                (error || items.length
+                  ? 'Нет связи с баром. Оформление временно недоступно.'
+                  : 'Загружаем меню…')}
+              {!accessError && (
+                <button
+                  type="button"
+                  className="order-button order-button-secondary"
+                  onClick={refresh}
+                >
+                  Обновить
+                </button>
+              )}
             </p>
-          )}
-          {!online && !message && (table || !error) && (
-            <p className="club-notice" role="status">
-              {items.length
-                ? 'Нет связи с баром. Оформление временно недоступно.'
-                : 'Загружаем меню…'}{' '}
-              <button onClick={refresh}>Обновить</button>
-            </p>
-          )}
-        </div>
+          </div>
+        ) : null}
         <Menu
           items={items}
           cart={cart}
           onChange={changeQuantity}
-          onDetails={(item) => setDetails({ item })}
+          onDetails={(item) => navigate('item', { itemId: item.id })}
           enabled={orderEnabled}
           busy={cartBusy || sending}
+          ready={online || items.length > 0}
         />
+        <footer className="w order-footer">
+          <span>SPACE ARENA</span>
+          <p>Вопросы по составу и аллергенам уточняйте у бармена.</p>
+          <button type="button" onClick={() => window.scrollTo({ top: 0 })}>
+            Наверх ↑
+          </button>
+        </footer>
       </main>
-      <footer className="w club-footer">
-        SPACE ARENA · Меню клуба · Вопросы по составу и аллергенам уточняйте у бармена.
-      </footer>
-      {table && (
+
+      {table && (shopView === 'cart' || editingRow) && (
+        <main className="w order-subpage checkout-page" hidden={shopView !== 'cart'} tabIndex={-1}>
+          <OrderHeading title="Корзина" label={placeLabel} backLabel="К меню" onBack={menuAction} />
+          {!online && (
+            <p className="order-notice" role="status">
+              Нет связи с баром. Оформление временно недоступно.
+            </p>
+          )}
+          <Checkout
+            rows={rows}
+            total={total}
+            canEdit={canEdit}
+            sending={sending}
+            canSubmit={canSubmit}
+            error={checkoutError}
+            onBack={menuAction}
+            onSubmit={submitOrder}
+            onQuantityChange={changeQuantity}
+            onEdit={(row) =>
+              navigate('item', {
+                itemId: row.current.id,
+                rowKey: row.key,
+                editRevision: sharedCart?.revision,
+              })
+            }
+            onRemoveUnavailable={removeUnavailable}
+          />
+        </main>
+      )}
+
+      {shopView === 'orders' && (
+        <main className="w order-subpage" tabIndex={-1}>
+          <OrderHeading
+            title="Мои заказы"
+            backLabel="К меню"
+            onBack={menuAction}
+            action={
+              <button
+                type="button"
+                className="order-button order-button-secondary"
+                onClick={refresh}
+              >
+                Обновить
+              </button>
+            }
+          />
+          {!session?.visit_id && (
+            <p className="order-notice">
+              Чтобы связать заказы на телефоне и ПК, откройте свежий QR на обоих устройствах.
+            </p>
+          )}
+          {orders.length > 0 ? (
+            <>
+              {orders.some((order) => order.status !== 'cancelled') && (
+                <p className="order-notice order-history-note">
+                  Для оплаты назовите бармену место, указанное в заказе.
+                </p>
+              )}
+              <GuestOrders orders={orders} menuItems={items} />
+            </>
+          ) : (
+            <div className="order-panel order-empty">
+              <h2>Заказов пока нет</h2>
+              <p>Здесь появятся отправленные заказы и их статусы.</p>
+              <button
+                type="button"
+                className="order-button order-button-primary"
+                onClick={menuAction}
+              >
+                Перейти в меню
+              </button>
+            </div>
+          )}
+        </main>
+      )}
+
+      {shopView === 'item' && (
+        <main className="w order-subpage item-subpage" tabIndex={-1}>
+          <OrderHeading
+            title={detailItem?.name || (online ? 'Позиция недоступна' : 'Загружаем позицию…')}
+            label={detailItem?.category}
+            backLabel={editingRow ? 'К корзине' : 'К меню'}
+            onBack={backFromItem}
+          />
+          {detailItem && (
+            <ItemDetails
+              key={JSON.stringify([
+                detailItem.id,
+                view.rowKey,
+                detailItem.removable_ingredients,
+                detailItem.temperature_options,
+              ])}
+              item={detailItem}
+              row={detailRow}
+              enabled={orderEnabled && !sending}
+              onClose={backFromItem}
+              onSave={(item, selection, count) =>
+                saveSelection(item, selection, count, view.rowKey)
+              }
+            />
+          )}
+        </main>
+      )}
+
+      {table && (shopView !== 'cart' || !rows.length) && (
         <nav className="order-dock" aria-label="Действия с заказом">
           <button
             type="button"
-            className="order-dock-history"
-            data-m
-            onClick={() => setOrdersOpen(true)}
-            aria-haspopup="dialog"
+            onClick={menuAction}
+            aria-current={shopView === 'menu' ? 'page' : undefined}
           >
+            <span className="menu-icon" aria-hidden="true" />
+            Меню
+          </button>
+          <button
+            type="button"
+            onClick={orderAction}
+            aria-current={shopView === 'orders' ? 'page' : undefined}
+          >
+            <span className="history-icon" aria-hidden="true" />
             Мои заказы
-            {orders.length > 0 && <span className="dock-count">{orders.length}</span>}
           </button>
           <button
             type="button"
             className="order-dock-cart"
-            data-m
-            onClick={openCart}
-            aria-haspopup="dialog"
+            onClick={cartAction}
+            aria-current={shopView === 'cart' ? 'page' : undefined}
           >
-            <span>Корзина {quantity > 0 && `(${quantity})`}</span>
-            <strong>{money(total)}</strong>
+            <span className="cart-icon" aria-hidden="true" />
+            <span>Корзина</span>
+            {quantity > 0 && <strong>{money(total)}</strong>}
           </button>
         </nav>
       )}
       {message && (
-        <div className="club-toast" role="status">
+        <div className="order-toast" role="status">
           {message}
         </div>
       )}
       {error && (
-        <div className="club-alert" role="alert">
+        <div className="order-toast order-error" role="alert">
           {error}
-          <button aria-label="Закрыть сообщение" onClick={() => setError('')}>
+          <button type="button" aria-label="Закрыть сообщение" onClick={() => setError('')}>
             ×
           </button>
         </div>
       )}
-
-      {ordersOpen && (
-        <Modal title="Мои заказы" className="visit-dialog" onClose={() => setOrdersOpen(false)}>
-          <div className="visit-toolbar">
-            <p className="muted">
-              {placeLabel}
-              {session?.visit_id && ' · Текущий визит'}
-            </p>
-            <button type="button" className="quiet-button" onClick={refresh}>
-              Обновить
-            </button>
-          </div>
-          {!session?.visit_id && (
-            <p className="muted visit-hint">
-              Откройте свежий QR на телефоне и в меню на ПК, чтобы связать заказы и корзину.
-            </p>
-          )}
-          <GuestOrders orders={orders} menuItems={items} />
-          {session?.visit_id && (
-            <button
-              type="button"
-              className="quiet-button visit-end"
-              onClick={() => {
-                setEndError('');
-                setEndOpen(true);
-              }}
-            >
-              Завершить визит
-            </button>
-          )}
-        </Modal>
-      )}
-      {endOpen && (
-        <Modal title="Завершить визит?" onClose={() => !ending && setEndOpen(false)}>
-          <p>
-            Корзина очистится и доступ закроется на всех подключённых устройствах. Отправленные
-            заказы останутся у бармена.
-          </p>
-          {endError && (
-            <p className="form-error" role="alert">
-              {endError}
-            </p>
-          )}
-          <button
-            type="button"
-            className="btn visit-confirm"
-            disabled={ending}
-            onClick={finishVisit}
-          >
-            {ending ? 'Завершаем…' : 'Завершить визит'}
-          </button>
-        </Modal>
-      )}
-      {cartOpen && (
-        <CheckoutDialog
-          placeLabel={placeLabel}
-          rows={rows}
-          total={total}
-          canEdit={canEdit}
-          sending={sending}
-          canSubmit={canSubmit}
-          error={checkoutError}
-          onClose={closeCart}
-          onSubmit={submitOrder}
-          onQuantityChange={changeQuantity}
-          onEdit={(row) => setDetails({ item: row.current, row, revision: sharedCart?.revision })}
-          onRemoveUnavailable={removeUnavailable}
-        />
-      )}
-      {currentDetails && (
-        <ItemDetails
-          key={JSON.stringify([
-            currentDetails.id,
-            currentDetails.removable_ingredients,
-            currentDetails.temperature_options,
-          ])}
-          item={currentDetails}
-          row={details.row}
-          enabled={orderEnabled && !sending}
-          onClose={() => setDetails(null)}
-          onSave={saveSelection}
-        />
-      )}
     </>
+  );
+}
+
+function OrderHeading({ title, label, backLabel, onBack, action }) {
+  return (
+    <div className="order-page-heading">
+      <button type="button" className="order-back" onClick={onBack}>
+        <span aria-hidden="true">←</span> {backLabel}
+      </button>
+      <div className="order-page-title">
+        <div>
+          {label && <p>{label}</p>}
+          <h1 tabIndex={-1}>{title}</h1>
+        </div>
+        {action}
+      </div>
+    </div>
   );
 }

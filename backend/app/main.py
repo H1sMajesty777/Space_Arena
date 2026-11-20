@@ -13,7 +13,7 @@ from .bootstrap import initialize_database
 from .cache import redis
 from .config import settings
 from .database import engine, get_db
-from .routers import auth, cart, menu, orders, access, uploads
+from .routers import auth, cart, floor, menu, orders, access, uploads
 
 
 @asynccontextmanager
@@ -35,6 +35,7 @@ app.add_middleware(
 app.include_router(auth.router, tags=["Вход администратора"])
 app.include_router(menu.router, tags=["Меню"])
 app.include_router(orders.router, tags=["Заказы"])
+app.include_router(floor.router, tags=["Карта клуба"])
 app.include_router(cart.router, tags=["Корзина"])
 app.include_router(access.router, tags=["Доступ и устройства"])
 app.include_router(uploads.router, tags=["Фотографии"])

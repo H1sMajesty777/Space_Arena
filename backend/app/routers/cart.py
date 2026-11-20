@@ -5,7 +5,7 @@ from ..database import get_db
 from ..models import GuestVisit
 from ..schemas import CartUpdate
 from ..visits import check_cart_revision, get_visit
-from .access import check_origin, require_guest
+from .access import check_origin, require_guest, validate_place
 
 router = APIRouter()
 
@@ -27,6 +27,7 @@ async def update_cart(
     db: AsyncSession = Depends(get_db),
 ):
     check_origin(request)
+    await validate_place(session, db, lock_table=True)
     visit = await get_visit(session, db, for_update=True)
     check_cart_revision(visit, payload.visit_id, payload.revision)
     visit.cart_items = [line.model_dump() for line in payload.items]

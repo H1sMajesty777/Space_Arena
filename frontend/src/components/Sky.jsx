@@ -5,13 +5,15 @@ const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
 const COMPACT_FRAME_MS = 50;
 const MAX_COMPACT_STARS = 56;
 
-export function Sky() {
+export function Sky({ cursorGlow = false }) {
   const reference = useRef(null);
+  const glowRef = useRef(null);
 
   useEffect(() => {
     const canvas = reference.current;
     const context = canvas.getContext('2d');
     if (!context) return;
+    const glow = glowRef.current;
 
     const compact = matchMedia(COMPACT_SKY);
     const reduced = matchMedia(REDUCED_MOTION);
@@ -109,6 +111,7 @@ export function Sky() {
 
     function sync() {
       stop();
+      if (document.hidden || compact.matches || reduced.matches) hideGlow();
       if (document.hidden) return;
       if (compact.matches || reduced.matches) comet = null;
       resize();
@@ -119,6 +122,14 @@ export function Sky() {
       if (compact.matches || reduced.matches || event.pointerType !== 'mouse') return;
       mouseX = event.clientX / width - 0.5;
       mouseY = event.clientY / height - 0.5;
+      if (glow) {
+        glow.style.transform = `translate(${event.clientX}px, ${event.clientY}px)`;
+        glow.hidden = false;
+      }
+    }
+
+    function hideGlow() {
+      if (glow) glow.hidden = true;
     }
 
     window.addEventListener('resize', resize);
@@ -126,6 +137,10 @@ export function Sky() {
     document.addEventListener('visibilitychange', sync);
     compact.addEventListener('change', sync);
     reduced.addEventListener('change', sync);
+    if (glow) {
+      document.documentElement.addEventListener('pointerleave', hideGlow);
+      window.addEventListener('blur', hideGlow);
+    }
     sync();
     return () => {
       stop();
@@ -134,14 +149,17 @@ export function Sky() {
       document.removeEventListener('visibilitychange', sync);
       compact.removeEventListener('change', sync);
       reduced.removeEventListener('change', sync);
+      document.documentElement.removeEventListener('pointerleave', hideGlow);
+      window.removeEventListener('blur', hideGlow);
     };
-  }, []);
+  }, [cursorGlow]);
 
   return (
     <div className="space-sky club-sky" aria-hidden="true">
       <canvas id="sky" ref={reference} />
       <div className="au a" />
       <div className="au b" />
+      {cursorGlow && <div id="cg" ref={glowRef} hidden />}
     </div>
   );
 }

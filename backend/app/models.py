@@ -41,6 +41,8 @@ class Order(Base):
     session_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     visit_id: Mapped[str | None] = mapped_column(ForeignKey("guest_visits.id"), nullable=True, index=True)
     served_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    billing_archived: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
     pc_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
     customer_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -69,6 +71,7 @@ class ClubTable(Base):
     number: Mapped[int] = mapped_column(Integer, unique=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     version: Mapped[int] = mapped_column(Integer, default=1)
+    bar_flagged: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
 
 
 class ClubPC(Base):

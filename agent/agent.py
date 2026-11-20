@@ -8,7 +8,6 @@ import sys
 import threading
 import time
 import tkinter as tk
-import webbrowser
 from ctypes.wintypes import MSG
 from datetime import datetime
 from functools import partial
@@ -19,13 +18,16 @@ from urllib.error import HTTPError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
+import pythoncom
 import win32api
 import win32con
 import win32crypt
 import win32event
 import win32gui
+import win32process
 import win32ts
 import winerror
+from win32com.shell import shell
 from PySide6.QtCore import Qt, QTimer, QUrl, Signal
 from PySide6.QtWebEngineCore import QWebEnginePage
 from PySide6.QtWebEngineWidgets import QWebEngineView
@@ -55,6 +57,10 @@ QR_REFRESH_BEFORE_EXPIRY_SECONDS = 60
 MIN_ACCESS_CHECK_DELAY_SECONDS = 1
 MIN_QR_REFRESH_DELAY_SECONDS = 5
 
+# Открытие заказа в развёрнутом окне браузера по умолчанию.
+BROWSER_WINDOW_TIMEOUT_SECONDS = 10
+BROWSER_WINDOW_CHECK_INTERVAL_SECONDS = 0.1
+
 
 # Служебные пути и идентификаторы Windows.
 DEVICE_SETTINGS_PATH = Path(os.environ["LOCALAPPDATA"]) / "SpaceArena" / "device.bin"
@@ -65,6 +71,8 @@ AGENT_MUTEX_NAME = r"Local\SpaceArenaOrdersAgent"
 WM_WTSSESSION_CHANGE = 0x02B1
 WTS_SESSION_LOCK = 0x7
 WTS_SESSION_UNLOCK = 0x8
+ASSOCF_IS_PROTOCOL = 0x1000
+ASSOCSTR_EXECUTABLE = 2
 
 
 class BannerHandler(SimpleHTTPRequestHandler):
@@ -110,7 +118,12 @@ class BannerHandler(SimpleHTTPRequestHandler):
         if not order_url:
             self.send_error(403, "QR expired")
             return
-        webbrowser.open(order_url)
+        try:
+            open_order_in_browser(order_url)
+        except Exception:
+            logging.warning("Could not open the order browser")
+            self.send_error(503, "Could not open browser")
+            return
         self.send_response(204)
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
@@ -128,6 +141,61 @@ class BannerHandler(SimpleHTTPRequestHandler):
 class NoRedirect(HTTPRedirectHandler):
     def redirect_request(self, *args):
         return None
+
+
+def browser_windows(executable):
+    """Находит видимые окна выбранного браузера в порядке от переднего к заднему."""
+    windows = []
+
+    def collect_window(handle, _):
+        if not win32gui.IsWindowVisible(handle):
+            return
+        try:
+            _, process_id = win32process.GetWindowThreadProcessId(handle)
+            permissions = win32con.PROCESS_QUERY_INFORMATION | win32con.PROCESS_VM_READ
+            process = win32api.OpenProcess(permissions, False, process_id)
+            try:
+                window_executable = win32process.GetModuleFileNameEx(process, 0)
+            finally:
+                process.Close()
+            if os.path.normcase(window_executable) == executable:
+                windows.append(handle)
+        except win32api.error:
+            # Окно могло закрыться во время обхода, часть системных процессов недоступна.
+            return
+
+    win32gui.EnumWindows(collect_window, None)
+    return windows
+
+
+def open_order_in_browser(order_url):
+    """Открывает ссылку и разворачивает окно, в том числе у уже запущенного браузера."""
+    pythoncom.CoInitialize()
+    try:
+        association = shell.AssocCreate()
+        association.Init(ASSOCF_IS_PROTOCOL, urlsplit(order_url).scheme)
+        executable = os.path.normcase(association.GetString(0, ASSOCSTR_EXECUTABLE))
+        previous_windows = set(browser_windows(executable))
+
+        win32api.ShellExecute(0, "open", order_url, None, None, win32con.SW_SHOWMAXIMIZED)
+        deadline = time.monotonic() + BROWSER_WINDOW_TIMEOUT_SECONDS
+        while time.monotonic() < deadline:
+            windows = browser_windows(executable)
+            foreground = win32gui.GetForegroundWindow()
+            new_windows = [handle for handle in windows if handle not in previous_windows]
+            if foreground in windows:
+                target = foreground
+            elif new_windows:
+                target = new_windows[0]
+            else:
+                time.sleep(BROWSER_WINDOW_CHECK_INTERVAL_SECONDS)
+                continue
+
+            win32gui.ShowWindow(target, win32con.SW_SHOWMAXIMIZED)
+            return
+        raise TimeoutError("Order browser window did not appear")
+    finally:
+        pythoncom.CoUninitialize()
 
 
 def valid_origin(url):

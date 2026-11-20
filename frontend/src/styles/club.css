@@ -450,51 +450,59 @@
   display: grid;
   gap: 15px;
 }
-.guest-ticket {
-  --ticket-color: #e486f4;
-  --ticket-glow: #a230c322;
-  padding: 20px;
-  background: linear-gradient(130deg, var(--ticket-glow), #171020 65%);
-  border: 1px solid var(--ticket-color);
-  border-radius: 22px;
-  box-shadow:
-    inset 4px 0 var(--ticket-color),
-    0 14px 35px #0004;
+.order-ticket:is(.guest-ticket, .bar-ticket) {
+  --ticket-divider: color-mix(in srgb, var(--ticket-color, #d6c5e6) 36%, transparent);
+  --ticket-muted: color-mix(in srgb, var(--ticket-color, #d6c5e6) 48%, #efedf3);
+  --ticket-background: #171221;
+  min-width: 0;
+  border: 1px solid var(--ticket-divider);
+  border-inline-start: 3px solid var(--ticket-color, #d6c5e6);
+  border-radius: 16px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--ticket-color, #d6c5e6) 9%, var(--ticket-background)),
+    var(--ticket-background) 68%
+  );
+  box-shadow: 0 12px 26px #06030b32;
 }
-.guest-ticket.ticket-accepted {
-  --ticket-color: #b19bfa;
-  --ticket-glow: #775ac333;
+.ticket-new {
+  --ticket-color: #df89ef;
 }
-.guest-ticket.ticket-preparing {
-  --ticket-color: #ffbb77;
-  --ticket-glow: #bd71322c;
+.ticket-accepted {
+  --ticket-color: #b6a5f4;
 }
-.guest-ticket.ticket-ready {
-  --ticket-color: #6de1df;
-  --ticket-glow: #359eab30;
+.ticket-preparing {
+  --ticket-color: #f4b575;
 }
-.guest-ticket.ticket-served {
-  --ticket-color: #81dab0;
-  --ticket-glow: #3fa37826;
+.ticket-ready {
+  --ticket-color: #79dbe0;
 }
-.guest-ticket.ticket-cancelled {
-  --ticket-color: #887e95;
-  --ticket-glow: #7c75802c;
+.ticket-served {
+  --ticket-color: #83d6b3;
 }
-.guest-ticket-heading small {
-  color: var(--ticket-color);
-  font-size: 10px;
+.ticket-cancelled {
+  --ticket-color: #c5acbf;
+}
+.order-ticket-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  padding: 4px 9px;
+  border: 1px solid var(--ticket-divider);
+  border-radius: 7px;
+  color: var(--ticket-color, #d6c5e6);
+  background: #100d197a;
+  font-size: 12px;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  white-space: nowrap;
 }
-.guest-ticket-heading h3 {
-  margin-top: 5px;
-  font: 700 18px var(--hd);
-}
-.guest-ticket .status {
-  color: var(--ticket-color);
-  border: 1px solid currentColor;
-  background: #ffffff0d;
+.order-ticket-status::before {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentcolor;
+  content: '';
 }
 .guest-ticket-summary {
   display: flex;
@@ -608,13 +616,13 @@
   gap: 12px;
 }
 .admin-metrics div {
-  background: #1d112b99;
-  border: 1px solid var(--ln);
+  background: #1d142a;
+  border: 1px solid color-mix(in srgb, var(--ticket-color, #c9a7ff) 30%, transparent);
   border-radius: 18px;
   padding: 20px;
 }
 .admin-metrics small {
-  color: var(--mu);
+  color: var(--ticket-color, var(--mu));
 }
 .admin-metrics b {
   display: block;
@@ -691,20 +699,127 @@
 .order-ticket footer strong {
   font: 700 19px var(--hd);
 }
-.order-ticket.ticket-new {
-  border-color: #e04bff88;
-  box-shadow: inset 3px 0 #e04bff;
+.order-ticket:is(.guest-ticket, .bar-ticket) ul {
+  border-color: var(--ticket-divider);
+}
+.order-ticket:is(.guest-ticket, .bar-ticket) .selection-summary {
+  color: var(--ticket-muted);
+}
+.order-ticket:is(.guest-ticket, .bar-ticket) .order-note {
+  border: 1px solid var(--ticket-divider);
+  background: #100d194d;
+  overflow-wrap: anywhere;
+}
+.bar-ticket {
+  display: flex;
+  flex-direction: column;
+  padding: clamp(14px, 2.2vw, 24px);
+}
+.bar-ticket header {
+  align-items: flex-start;
+  gap: 8px;
+}
+.bar-ticket-heading {
+  min-width: 0;
+}
+.bar-ticket-heading h3 {
+  font: 700 clamp(16px, 2.2vw, 24px)/1.25 var(--hd);
+  overflow-wrap: anywhere;
+}
+.bar-ticket-heading p,
+.bar-ticket-meta {
+  color: var(--ticket-muted);
+  font-size: 13px;
+}
+.bar-ticket-heading p {
+  margin-top: 5px;
+  font-weight: 800;
+}
+.bar-ticket-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 10px;
+  margin-top: 10px;
+  overflow-wrap: anywhere;
+}
+.bar-ticket-meta strong {
+  color: var(--ticket-color);
+}
+.bar-ticket .order-ticket-status {
+  padding: 4px 8px;
+  background: #21192b;
+  color: var(--ticket-color);
+  border-color: var(--ticket-divider);
+}
+.bar-ticket li {
+  align-items: start;
+  gap: 8px;
+}
+.bar-ticket-item {
+  display: flex;
+  align-items: start;
+  gap: 8px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.bar-ticket-quantity {
+  min-width: 30px;
+  flex: none;
+  color: var(--ticket-color);
+  white-space: nowrap;
+}
+.bar-ticket-price {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.bar-ticket footer {
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-top: auto;
+  padding: 0;
+  border: 0;
+  color: var(--ice);
+  text-align: left;
+}
+.bar-ticket-total {
+  display: grid;
+  gap: 2px;
+}
+.bar-ticket-total > span {
+  color: var(--ticket-muted);
+  font-size: 12px;
+}
+.bar-ticket-total strong {
+  white-space: nowrap;
 }
 .ticket-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 15px;
-  margin-top: 22px;
+  gap: 6px;
 }
-.ticket-actions .btn {
-  text-transform: none;
-  letter-spacing: 0;
+.ticket-actions button {
+  min-height: 44px;
+  padding: 7px 11px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 800;
+}
+.ticket-next {
+  background: #d6bafa;
+  color: #1a1420;
+}
+.ticket-next:hover:where(:not(:disabled)) {
+  background: #e9d6ff;
+}
+.ticket-actions .ticket-cancel {
+  background: #100d194d;
+  color: var(--ice);
+  border-color: var(--ticket-divider);
+}
+.ticket-actions .ticket-cancel:hover:where(:not(:disabled)) {
+  background: #100d1980;
 }
 .order-note {
   padding: 12px 15px;
@@ -712,29 +827,6 @@
   background: #a86dfb16;
   margin-bottom: 15px;
   font-size: 13px;
-}
-.status {
-  display: inline-block;
-  padding: 6px 12px;
-  border-radius: 25px;
-  color: var(--p2);
-  background: #8b2bff22;
-  font-size: 11px;
-  font-weight: 800;
-  white-space: nowrap;
-}
-.status-new {
-  color: #ffb0ef;
-  background: #e04bff25;
-}
-.status-ready,
-.status-served {
-  color: #a0f5d2;
-  background: #50b78c20;
-}
-.status-cancelled {
-  color: #bca8b2;
-  background: #ccc1;
 }
 .section-actions {
   display: flex;
@@ -1048,12 +1140,8 @@
   .order-ticket h3 {
     font-size: 18px;
   }
-  .ticket-actions .btn {
-    font-size: 10px;
-    padding: 14px 17px;
-  }
-  .ticket-actions {
-    gap: 8px;
+  .order-ticket.bar-ticket {
+    padding: 14px;
   }
   .login-form {
     padding: 24px;

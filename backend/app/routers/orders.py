@@ -1,21 +1,20 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from sqlalchemy import or_, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from ..database import get_db
 from ..kitchen import KITCHEN_CLOSES, KITCHEN_OPENS, KITCHEN_TIME_ZONE_LABEL, kitchen_is_open
-from ..models import MenuItem, Order, OrderItem
+from ..models import ClubTable, MenuItem, Order, OrderItem
 from ..schemas import OrderCreate, OrderLineCreate, OrderOut, OrderStatusUpdate
 from ..security import require_admin
 from ..visits import check_cart_revision, get_visit
-from .access import check_origin, rate_limit, require_guest
+from .access import check_origin, rate_limit, require_guest, validate_place
 
 router = APIRouter()
 
-GUEST_HISTORY_MINUTES = 15
 MAX_HISTORY_RESULTS = 500
 ORDER_REQUEST_LIMIT = 20
 ORDER_REQUEST_WINDOW_SECONDS = 60
@@ -60,7 +59,6 @@ def build_order_items(lines: list[OrderLineCreate], menu: dict[int, MenuItem]) -
 
 @router.get("/api/orders/my", response_model=list[OrderOut])
 async def my_orders(session: dict = Depends(require_guest), db: AsyncSession = Depends(get_db)):
-    cutoff = datetime.now(timezone.utc) - timedelta(minutes=GUEST_HISTORY_MINUTES)
     owner = (
         Order.visit_id == session["visit_id"]
         if session.get("visit_id")
@@ -72,7 +70,8 @@ async def my_orders(session: dict = Depends(require_guest), db: AsyncSession = D
         .where(
             owner,
             Order.table_id == session["table_id"],
-            or_(Order.status != "served", Order.served_at > cutoff),
+            Order.paid_at.is_(None),
+            Order.billing_archived.is_(False),
         )
         .order_by(Order.created_at.desc())
         .limit(MAX_HISTORY_RESULTS)
@@ -90,6 +89,7 @@ async def create_order(
     await rate_limit("order:" + (session.get("visit_id") or session["id"]), ORDER_REQUEST_LIMIT, ORDER_REQUEST_WINDOW_SECONDS)
     check_origin(request)
 
+    await validate_place(session, db, lock_table=True)
     visit = await get_visit(session, db, for_update=True) if session.get("visit_id") else None
     lines = payload.items
     if payload.cart_revision is not None:
@@ -159,6 +159,10 @@ async def get_order(order_id: int, db: AsyncSession = Depends(get_db)):
 async def update_order_status(
     order_id: int, payload: OrderStatusUpdate, db: AsyncSession = Depends(get_db)
 ):
+    # Смена статуса может изменить состав открытого счёта при отмене.
+    table_id = await db.scalar(select(Order.table_id).where(Order.id == order_id))
+    if table_id is not None:
+        await db.get(ClubTable, table_id, with_for_update=True)
     query = select(Order).options(selectinload(Order.items)).where(Order.id == order_id).with_for_update()
     order = await db.scalar(query)
     if order is None:

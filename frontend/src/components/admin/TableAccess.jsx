@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { placeName, tableAliases } from '../../config/floor';
 import { usePolling } from '../../hooks/usePolling';
 import { BAR_REFRESH_MS } from '../../config/orders';
 
@@ -7,6 +8,7 @@ export function TableAccess({ api }) {
   const [error, setError] = useState('');
   const [secret, setSecret] = useState('');
   const [busy, setBusy] = useState(false);
+  const [newPlace, setNewPlace] = useState('');
   const refresh = useCallback(async () => {
     try {
       setData(await api('/api/admin/access'));
@@ -32,7 +34,7 @@ export function TableAccess({ api }) {
   function addTable(event) {
     event.preventDefault();
     change('/api/admin/tables', 'POST', {
-      number: Number(new FormData(event.currentTarget).get('number')),
+      number: Number(newPlace || new FormData(event.currentTarget).get('number')),
     });
   }
   function addPC(event) {
@@ -45,7 +47,7 @@ export function TableAccess({ api }) {
   }
   return (
     <section className="club-form">
-      <h2>Столы и компьютеры</h2>
+      <h2>Места и компьютеры</h2>
       {error && <p className="form-error">{error}</p>}
       {secret && (
         <div className="club-notice">
@@ -61,16 +63,29 @@ export function TableAccess({ api }) {
       )}
       <form className="club-form" onSubmit={addTable}>
         <label>
-          Номер стола
-          <input name="number" type="number" min="1" max="500" required />
+          Новое место
+          <select value={newPlace} onChange={(event) => setNewPlace(event.target.value)}>
+            <option value="">Стол по номеру</option>
+            {Object.entries(tableAliases).map(([number, name]) => (
+              <option key={number} value={number}>
+                {name}
+              </option>
+            ))}
+          </select>
         </label>
+        {!newPlace && (
+          <label>
+            Номер стола
+            <input name="number" type="number" min="1" max="500" required />
+          </label>
+        )}
         <button className="btn" disabled={busy}>
-          Добавить стол
+          Добавить место
         </button>
       </form>
       {data.tables.map((table) => (
         <div className="catalog-item" key={table.id}>
-          <b>Стол {table.number}</b>
+          <b>{placeName(table.number)}</b>
           <span>{table.active ? 'Доступен' : 'Отключён'}</span>
           <button
             className="quiet-button"
@@ -89,11 +104,11 @@ export function TableAccess({ api }) {
           <input name="name" maxLength="100" required />
         </label>
         <label>
-          Стол
+          Место
           <select name="table" required>
             {data.tables.map((table) => (
               <option key={table.id} value={table.id}>
-                Стол {table.number}
+                {placeName(table.number)}
               </option>
             ))}
           </select>
@@ -105,7 +120,7 @@ export function TableAccess({ api }) {
       {data.pcs.map((pc) => (
         <article className="order-ticket gl" key={pc.id}>
           <h3>
-            {pc.name} · Стол {data.tables.find((table) => table.id === pc.table_id)?.number}
+            {pc.name} · {placeName(data.tables.find((table) => table.id === pc.table_id)?.number)}
           </h3>
           <p className="muted">
             {pc.active ? 'Активен' : 'Отключён'} · Последняя связь{' '}

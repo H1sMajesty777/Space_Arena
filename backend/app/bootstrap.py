@@ -17,9 +17,29 @@ async def initialize_database():
         "ALTER TABLE orders ADD COLUMN IF NOT EXISTS table_id INTEGER REFERENCES tables(id)",
         "ALTER TABLE orders ADD COLUMN IF NOT EXISTS session_id VARCHAR(64)",
         "ALTER TABLE orders ADD COLUMN IF NOT EXISTS served_at TIMESTAMPTZ",
+        "ALTER TABLE orders ADD COLUMN IF NOT EXISTS paid_at TIMESTAMPTZ",
+        "ALTER TABLE tables ADD COLUMN IF NOT EXISTS bar_flagged BOOLEAN NOT NULL DEFAULT FALSE",
+        "CREATE INDEX IF NOT EXISTS ix_orders_open_table ON orders (table_id) WHERE paid_at IS NULL AND status <> 'cancelled'",
         "CREATE INDEX IF NOT EXISTS ix_orders_session_id ON orders(session_id)",
         "ALTER TABLE orders ADD COLUMN IF NOT EXISTS visit_id VARCHAR(64) REFERENCES guest_visits(id)",
         "CREATE INDEX IF NOT EXISTS ix_orders_visit_id ON orders(visit_id)",
+        "CREATE INDEX IF NOT EXISTS ix_guest_visits_open_table ON guest_visits (table_id) WHERE ended_at IS NULL",
+        # Архивируем только старую выданную историю, которая уже исчезла из гостевого интерфейса.
+        "ALTER TABLE orders ADD COLUMN IF NOT EXISTS billing_archived BOOLEAN",
+        """
+        UPDATE orders
+        SET billing_archived = (
+            status = 'served'
+            AND COALESCE(served_at, created_at) <= NOW() - INTERVAL '15 minutes'
+            AND NOT EXISTS (
+                SELECT 1 FROM guest_visits
+                WHERE guest_visits.id = orders.visit_id
+                  AND ended_at IS NULL AND expires_at > NOW()
+            )
+        )
+        WHERE billing_archived IS NULL
+        """,
+        "ALTER TABLE orders ALTER COLUMN billing_archived SET DEFAULT FALSE, ALTER COLUMN billing_archived SET NOT NULL",
         "INSERT INTO tables (number, active, version) SELECT DISTINCT table_number, TRUE, 1 FROM orders ON CONFLICT (number) DO NOTHING",
         "UPDATE orders SET table_id = tables.id FROM tables WHERE orders.table_number = tables.number AND orders.table_id IS NULL",
         "ALTER TABLE order_items ADD COLUMN IF NOT EXISTS image_url VARCHAR(255)",

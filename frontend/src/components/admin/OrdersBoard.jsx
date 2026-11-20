@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { placeName, tableAliases } from '../../config/floor';
 import { money, orderTotal, ORDER_STATUS } from '../../config/orders';
 import { Modal } from '../Modal';
 import { SelectionSummary } from '../ItemChoices';
@@ -37,7 +38,9 @@ export function OrdersBoard({ orders, api, onChanged, onError }) {
         ].map(([value, label]) => (
           <button
             key={value}
+            type="button"
             className={filter === value ? 'active' : ''}
+            aria-pressed={filter === value}
             onClick={() => setFilter(value)}
           >
             {label}
@@ -48,54 +51,68 @@ export function OrdersBoard({ orders, api, onChanged, onError }) {
         {filtered.map((order) => {
           const status = ORDER_STATUS[order.status];
           return (
-            <article key={order.id} className={`order-ticket gl ticket-${order.status}`}>
+            <article key={order.id} className={`order-ticket bar-ticket ticket-${order.status}`}>
               <header>
-                <div>
-                  <p className="eb">ЗАКАЗ №{order.id}</p>
+                <div className="bar-ticket-heading">
                   <h3>
-                    {order.pc_number ? `ПК №${order.pc_number}` : `Столик ${order.table_number}`}
+                    {order.pc_number && !tableAliases[order.table_number]
+                      ? `ПК №${order.pc_number}`
+                      : placeName(order.table_number)}
                   </h3>
+                  <p>Заказ №{order.id}</p>
                 </div>
-                <span className={`status status-${order.status}`}>{status?.label}</span>
+                <span className="order-ticket-status">{status?.label || order.status}</span>
               </header>
-              <p className="muted">
-                {new Date(order.created_at).toLocaleString('ru-RU')}
-                {order.customer_name && ` · ${order.customer_name}`}
+              <p className="bar-ticket-meta">
+                <time dateTime={order.created_at}>
+                  {new Date(order.created_at).toLocaleString('ru-RU')}
+                </time>
+                {order.customer_name && <span>{order.customer_name}</span>}
+                {order.paid_at && <strong>Оплачен</strong>}
               </p>
               <ul>
                 {order.items.map((line) => (
                   <li key={line.id}>
-                    <span>
-                      <b>{line.quantity} ×</b> {line.name}
-                      <SelectionSummary selection={line} />
+                    <span className="bar-ticket-item">
+                      <b className="bar-ticket-quantity">{line.quantity} ×</b>
+                      <span>
+                        <b>{line.name}</b>
+                        <SelectionSummary selection={line} />
+                      </span>
                     </span>
-                    <span>{money(Number(line.unit_price) * line.quantity)}</span>
+                    <span className="bar-ticket-price">
+                      {money(Number(line.unit_price) * line.quantity)}
+                    </span>
                   </li>
                 ))}
               </ul>
               {order.note && <p className="order-note">{order.note}</p>}
               <footer>
-                <span>Итого</span>
-                <strong>{money(orderTotal(order))}</strong>
-              </footer>
-              {status?.next && (
-                <div className="ticket-actions">
-                  <button
-                    className="btn"
-                    disabled={busy === order.id}
-                    onClick={() => changeStatus(order, status.next)}
-                  >
-                    {busy === order.id ? 'Обновляем…' : status.action}
-                  </button>
-                  <button
-                    className="quiet-button"
-                    disabled={busy === order.id}
-                    onClick={() => setCancel(order)}
-                  >
-                    Отменить
-                  </button>
+                <div className="bar-ticket-total">
+                  <span>Итого</span>
+                  <strong>{money(orderTotal(order))}</strong>
                 </div>
-              )}
+                {status?.next && (
+                  <div className="ticket-actions">
+                    <button
+                      type="button"
+                      className="ticket-next"
+                      disabled={busy === order.id}
+                      onClick={() => changeStatus(order, status.next)}
+                    >
+                      {busy === order.id ? 'Обновляем…' : status.action}
+                    </button>
+                    <button
+                      type="button"
+                      className="ticket-cancel"
+                      disabled={busy === order.id}
+                      onClick={() => setCancel(order)}
+                    >
+                      Отменить
+                    </button>
+                  </div>
+                )}
+              </footer>
             </article>
           );
         })}

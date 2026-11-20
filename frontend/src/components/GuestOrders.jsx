@@ -1,4 +1,5 @@
 import { imageSource } from '../api/client';
+import { placeName } from '../config/floor';
 import { money, orderTotal, ORDER_STATUS } from '../config/orders';
 import { SelectionSummary } from './ItemChoices';
 
@@ -19,19 +20,25 @@ export function GuestOrders({ orders, menuItems = [] }) {
             <header className="guest-ticket-heading">
               <div>
                 <small>ЗАКАЗ №{order.id}</small>
-                <h3>{ORDER_STATUS[order.status]?.label}</h3>
+                <h2>{ORDER_STATUS[order.status]?.label || order.status}</h2>
               </div>
+              <span className="guest-ticket-place">{placeName(order.table_number)}</span>
             </header>
             <div className="guest-ticket-summary">
-              {photos.length > 0 && (
-                <div className="order-photos">
-                  {photos.map((photo) => (
-                    <div className="order-photo" key={photo.id}>
-                      <img src={imageSource(photo.url)} alt={photo.name} loading="lazy" />
+              <div className="order-photos">
+                {Array.from({ length: 4 }, (_, index) => {
+                  const photo = photos[index];
+                  return (
+                    <div className="order-photo" key={photo?.id ?? `empty-${index}`}>
+                      {photo ? (
+                        <img src={imageSource(photo.url)} alt={photo.name} loading="lazy" />
+                      ) : (
+                        <span aria-hidden="true">✦</span>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
+                  );
+                })}
+              </div>
               <div className="guest-ticket-facts">
                 <strong>{money(orderTotal(order))}</strong>
                 <time dateTime={order.created_at}>

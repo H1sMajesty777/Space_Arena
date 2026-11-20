@@ -1,9 +1,10 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { request } from '../api/client';
 import { OrdersBoard } from '../components/admin/OrdersBoard';
 import { Catalog } from '../components/admin/Catalog';
 import { ItemEditor } from '../components/admin/ItemEditor';
 import { TableAccess } from '../components/admin/TableAccess';
+import { ClubMap } from '../components/admin/ClubMap';
 import { usePolling } from '../hooks/usePolling';
 import { BAR_REFRESH_MS } from '../config/orders';
 
@@ -91,24 +92,30 @@ function Dashboard({ api, logout }) {
   const [view, setView] = useState('orders');
   const [orders, setOrders] = useState([]);
   const [items, setItems] = useState([]);
+  const [floor, setFloor] = useState(null);
   const [editor, setEditor] = useState(undefined);
   const [error, setError] = useState('');
   const [updated, setUpdated] = useState('');
+  const refreshAttempt = useRef(0);
 
   const refresh = useCallback(async () => {
+    const attempt = ++refreshAttempt.current;
     try {
-      const [currentOrders, currentItems] = await Promise.all([
+      const [currentOrders, currentItems, currentFloor] = await Promise.all([
         api('/api/admin/orders?limit=500'),
         api('/api/admin/menu'),
+        view === 'floor' ? api('/api/admin/floor') : null,
       ]);
+      if (attempt !== refreshAttempt.current) return;
       setOrders(currentOrders);
       setItems(currentItems);
+      if (currentFloor) setFloor(currentFloor);
       setUpdated(new Date().toLocaleTimeString('ru-RU'));
       setError('');
     } catch (issue) {
-      setError(issue.message);
+      if (attempt === refreshAttempt.current) setError(issue.message);
     }
-  }, [api]);
+  }, [api, view]);
   usePolling(refresh, BAR_REFRESH_MS);
 
   return (
@@ -135,17 +142,17 @@ function Dashboard({ api, logout }) {
           </button>
         </div>
         <div className="admin-metrics">
-          <div>
+          <div className="ticket-new">
             <small>Новые</small>
             <b>{orders.filter((order) => order.status === 'new').length}</b>
           </div>
-          <div>
+          <div className="ticket-preparing">
             <small>Готовятся</small>
             <b>
               {orders.filter((order) => ['accepted', 'preparing'].includes(order.status)).length}
             </b>
           </div>
-          <div>
+          <div className="ticket-ready">
             <small>Готовы</small>
             <b>{orders.filter((order) => order.status === 'ready').length}</b>
           </div>
@@ -157,12 +164,15 @@ function Dashboard({ api, logout }) {
         <nav className="admin-tabs" aria-label="Разделы панели">
           {[
             ['orders', 'Заказы'],
+            ['floor', 'Карта клуба'],
             ['menu', 'Меню и стоп-лист'],
             ['tables', 'Столики · QR'],
           ].map(([value, label]) => (
             <button
               key={value}
+              type="button"
               className={view === value ? 'active' : ''}
+              aria-pressed={view === value}
               onClick={() => setView(value)}
             >
               {label}
@@ -177,6 +187,7 @@ function Dashboard({ api, logout }) {
         {view === 'orders' && (
           <OrdersBoard orders={orders} api={api} onChanged={refresh} onError={setError} />
         )}
+        {view === 'floor' && <ClubMap tables={floor} api={api} onChanged={refresh} />}
         {view === 'menu' && (
           <>
             <div className="section-actions">

@@ -5,6 +5,7 @@ import { BarPage } from './pages/BarPage';
 import { Sky } from './components/Sky';
 import './styles/club.css';
 import './styles/order.css';
+import './styles/floor.css';
 
 const Page = location.pathname.includes('bar.html') ? BarPage : OrderPage;
 
@@ -33,7 +34,7 @@ class PageErrorBoundary extends React.Component {
 
 createRoot(document.getElementById('root')).render(
   <PageErrorBoundary>
-    <Sky />
+    <Sky cursorGlow={Page === OrderPage} />
     <Page />
   </PageErrorBoundary>,
 );

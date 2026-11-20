@@ -51,8 +51,10 @@ def require_transport():
         raise HTTPException(503, "Для доступа требуется HTTPS")
 
 
-async def validate_place(data, db):
-    table = await db.get(ClubTable, data["table_id"])
+async def validate_place(data, db, *, lock_table=False):
+    table = await db.get(
+        ClubTable, data["table_id"], with_for_update=lock_table, populate_existing=lock_table
+    )
     pc = await db.get(ClubPC, data["pc_id"])
     if not table or not pc or not table.active or not pc.active:
         raise HTTPException(403, "Стол или компьютер отключён")
@@ -82,24 +84,6 @@ async def session_info(session: dict = Depends(require_guest)):
         "visit_id": session.get("visit_id"),
         "expires_at": session["expires_at"],
     }
-
-
-@router.post("/api/session/end", status_code=204)
-async def end_visit(
-    request: Request, session: dict = Depends(require_guest), db: AsyncSession = Depends(get_db)
-):
-    check_origin(request)
-    pc = await db.get(ClubPC, session["pc_id"], with_for_update=True, populate_existing=True)
-    if not pc or not pc.active or pc.version != session["pc_version"]:
-        raise HTTPException(403, "Доступ отозван. Обновите QR")
-    visit = await get_visit(session, db, for_update=True)
-    visit.ended_at = datetime.now(timezone.utc)
-    visit.cart_items = []
-    pc.version += 1
-    await db.commit()
-    response = Response(status_code=204)
-    response.delete_cookie(COOKIE)
-    return response
 
 
 @router.get("/api/pc/qr-token")
@@ -166,6 +150,7 @@ async def enter(request: Request, db: AsyncSession = Depends(get_db)):
             existing = await require_guest(request, db)
         except HTTPException:
             existing = None
+        await validate_place(data, db, lock_table=True)
         visit = await join_visit(data, db)
         if existing and existing.get("visit_id") == visit.id:
             return RedirectResponse("/order", status_code=303)
@@ -178,6 +163,8 @@ async def enter(request: Request, db: AsyncSession = Depends(get_db)):
                     Order.session_id == existing["id"],
                     Order.table_id == visit.table_id,
                     Order.visit_id.is_(None),
+                    Order.paid_at.is_(None),
+                    Order.billing_archived.is_(False),
                 )
                 .values(visit_id=visit.id)
             )

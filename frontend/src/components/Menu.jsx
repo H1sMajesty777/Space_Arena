@@ -4,16 +4,15 @@ import { MAX_QUANTITY_PER_VARIANT, money } from '../config/orders';
 import { hasOptions, unavailableLabel } from '../config/menu';
 import presentation from '../config/presentation.json';
 
-function ItemAction({ item, value = 0, onChange, onDetails, enabled, busy }) {
+function ItemAction({ item, value, onChange, onDetails, enabled, busy }) {
   const unavailable = unavailableLabel(item);
-  if (unavailable) return <span className="stop-label">{unavailable}</span>;
+  if (unavailable) return <span className="menu-status">{unavailable}</span>;
   if (!enabled) return null;
   if (hasOptions(item)) {
     return (
       <button
         type="button"
-        className="quiet-button choose-item"
-        data-m
+        className="order-button order-button-secondary choose-item"
         disabled={busy}
         onClick={() => onDetails(item)}
         aria-label={`Настроить: ${item.name}`}
@@ -23,278 +22,345 @@ function ItemAction({ item, value = 0, onChange, onDetails, enabled, busy }) {
     );
   }
   return (
-    <div className="quantity">
+    <div className={`quantity menu-quantity${value > 0 ? ' has-value' : ''}`}>
       {value > 0 && (
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => onChange(item, -1)}
-          aria-label={`Уменьшить: ${item.name}`}
-        >
-          −
-        </button>
+        <>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onChange(item, -1)}
+            aria-label={`Уменьшить: ${item.name}`}
+            className="quantity-minus"
+          />
+          <output aria-label="В корзине">{value}</output>
+        </>
       )}
-      {value > 0 && <output>{value}</output>}
       <button
         type="button"
+        className="quantity-plus"
         disabled={busy || value >= MAX_QUANTITY_PER_VARIANT}
         onClick={() => onChange(item, 1)}
         aria-label={`Добавить: ${item.name}`}
-      >
-        +
-      </button>
+      />
     </div>
   );
 }
 
-function Scatter({ items, seed, onDetails }) {
-  if (!items.length) return null;
-  const height = Math.ceil(items.length / 2) * 0.4 + 0.1;
+function MenuCard({ item, featured, value = 0, onChange, onDetails, enabled, busy }) {
+  const unavailable = unavailableLabel(item);
+  const photoStatus = featured && item.image_url && unavailable;
   return (
-    <div className="scatter" data-enter style={{ aspectRatio: 1 / height }}>
-      {items.map((item, index) => {
-        const alone = items.length % 2 === 1 && index === items.length - 1;
-        const rotation = ((index * 7 + seed * 3) % 18) - 9;
-        return (
-          <figure
-            key={item.id}
-            className={`pic ${unavailableLabel(item) ? 'stopped-photo' : ''}`}
-            style={{
-              left: `${alone ? 27 : (index % 2) * 52}%`,
-              top: `${((Math.floor(index / 2) * 0.4) / height) * 100}%`,
-              width: '46%',
-              '--r': `${rotation}deg`,
-              '--fx': `${index % 2 === 0 ? -65 : 65}vw`,
-              '--fy': '35px',
-              '--d': `${index * 0.08}s`,
-            }}
+    <article
+      data-unavailable={Boolean(unavailable) || undefined}
+      className={`menu-card${featured ? ' menu-card-featured' : ''}`}
+    >
+      {item.image_url && (
+        <button
+          type="button"
+          className="menu-card-photo"
+          onClick={() => onDetails(item)}
+          aria-label={`Подробнее: ${item.name}`}
+          tabIndex={-1}
+        >
+          <img src={imageSource(item.image_url)} alt="" loading="lazy" />
+          {photoStatus && <span className="menu-photo-status">{unavailable}</span>}
+        </button>
+      )}
+      <div className="menu-card-body">
+        <h3>
+          <button
+            type="button"
+            className="name-button"
+            aria-label={unavailable ? `${item.name} · ${unavailable}` : undefined}
+            onClick={() => onDetails(item)}
           >
-            <button
-              className="photo-open"
-              onClick={() => onDetails(item)}
-              aria-label={`Подробнее: ${item.name}`}
-            >
-              <img src={imageSource(item.image_url)} alt={item.name} loading="lazy" />
-              <figcaption>
-                {item.name} · {money(item.price)}
-                {unavailableLabel(item) && ` · ${unavailableLabel(item)}`}
-              </figcaption>
-            </button>
-          </figure>
-        );
-      })}
-    </div>
+            {item.name}
+          </button>
+        </h3>
+        {item.description && <p>{item.description}</p>}
+        <div className="menu-card-bottom">
+          <strong>{money(item.price)}</strong>
+          {!photoStatus && <ItemAction {...{ item, value, onChange, onDetails, enabled, busy }} />}
+        </div>
+      </div>
+    </article>
   );
 }
 
-export function Menu({ items, cart, onChange, onDetails, enabled, busy }) {
+function categoryRank(name) {
+  const rank = presentation.categories.indexOf(name);
+  return rank === -1 ? presentation.categories.length : rank;
+}
+
+function scrollBehavior() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
+}
+
+function toolbarOffset(toolbar) {
+  const style = getComputedStyle(toolbar);
+  return style.position === 'sticky'
+    ? toolbar.offsetHeight + parseFloat(style.top)
+    : document.querySelector('.order-header').getBoundingClientRect().bottom;
+}
+
+export function Menu({ items, cart, onChange, onDetails, enabled, busy, ready }) {
+  const toolbar = useRef(null);
+  const anchor = useRef(null);
+  const strip = useRef(null);
   const catalog = useRef(null);
   const [search, setSearch] = useState('');
   const [onlyAllDay, setOnlyAllDay] = useState(false);
-  const [availabilityFilter, setAvailabilityFilter] = useState(null);
-  const onlyAvailable =
-    availabilityFilter ?? items.some((item) => item.unavailable_reason === 'kitchen_closed');
+  const [onlyAvailable, setOnlyAvailable] = useState(true);
+
+  const [currentCategory, setCurrentCategory] = useState(null);
+  const [canScrollCategories, setCanScrollCategories] = useState(false);
+
   const query = search.trim().toLocaleLowerCase('ru');
-  const visible = items.filter(
-    (item) =>
-      (!onlyAllDay || item.all_day) &&
-      (!onlyAvailable || !unavailableLabel(item)) &&
-      `${item.name} ${item.description || ''} ${item.category}`
-        .toLocaleLowerCase('ru')
-        .includes(query),
-  );
-  const categories = [...new Set(visible.map((item) => item.category))].sort((a, b) => {
-    const rank = (name) =>
-      presentation.categories.includes(name) ? presentation.categories.indexOf(name) : 999;
-    return rank(a) - rank(b);
-  });
-  const featured = presentation.featuredImages.flatMap((path) => {
-    const item = visible.find((row) => row.image_url?.replace(/^\//, '') === path);
-    return item ? [item] : [];
-  });
-  const revision = visible
-    .map((item) => `${item.id}:${item.image_url}:${item.category}:${unavailableLabel(item)}`)
-    .join('|');
+  const groups = new Map();
+  for (const item of items) {
+    if (onlyAllDay && !item.all_day) continue;
+    if (onlyAvailable && unavailableLabel(item)) continue;
+    const keywords = `${item.name} ${item.description || ''} ${item.category}`.toLocaleLowerCase(
+      'ru',
+    );
+    if (!keywords.includes(query)) continue;
+    if (!groups.has(item.category)) groups.set(item.category, []);
+    groups.get(item.category).push(item);
+  }
+  const categories = [...groups.keys()].sort((a, b) => categoryRank(a) - categoryRank(b));
+  const active = categories.includes(currentCategory) ? currentCategory : categories[0];
+  const categoryKey = JSON.stringify(categories);
+  const featured =
+    query || onlyAllDay
+      ? []
+      : presentation.featuredImages
+          .flatMap((path) => {
+            const item = items.find((row) => row.image_url?.replace(/^\//, '') === path);
+            return item && groups.get(item.category)?.includes(item) ? [item] : [];
+          })
+          .sort(
+            (a, b) => Number(Boolean(unavailableLabel(a))) - Number(Boolean(unavailableLabel(b))),
+          )
+          .slice(0, 4);
 
   useEffect(() => {
-    const targets = catalog.current.querySelectorAll(
-      '[data-enter]:not(.in), .scatter:has(.pic:not(.in))',
-    );
-    function reveal(element) {
-      element.classList.add('in');
-      element.querySelectorAll('.pic').forEach((photo) => photo.classList.add('in'));
+    const controls = toolbar.current;
+    const sections = [...catalog.current.querySelectorAll('[data-category]')];
+    let frame;
+    function update() {
+      frame = undefined;
+      if (!sections.length || !controls.offsetHeight) return;
+      const offset = toolbarOffset(controls) + 26;
+      const end = document.documentElement.scrollHeight - window.innerHeight;
+      const current =
+        end > 0 && window.scrollY >= end - 1
+          ? sections.at(-1)
+          : sections.findLast((section) => section.getBoundingClientRect().top <= offset);
+      setCurrentCategory((current || sections[0]).dataset.category);
     }
-    if (
-      !('IntersectionObserver' in window) ||
-      matchMedia('(prefers-reduced-motion: reduce)').matches
-    ) {
-      targets.forEach(reveal);
-      return;
+    function schedule() {
+      frame ??= requestAnimationFrame(update);
     }
+    const observer = new ResizeObserver(schedule);
+    observer.observe(controls);
+    observer.observe(catalog.current);
+    window.addEventListener('scroll', schedule, { passive: true });
+    schedule();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('scroll', schedule);
+      cancelAnimationFrame(frame);
+    };
+  }, [categoryKey]);
+
+  useEffect(() => {
+    const list = strip.current;
+    const update = () => {
+      if (list.offsetWidth) setCanScrollCategories(list.scrollWidth > list.clientWidth + 1);
+    };
+    const observer = new ResizeObserver(update);
+    observer.observe(list);
+    list.querySelectorAll('button').forEach((button) => observer.observe(button));
+    return () => observer.disconnect();
+  }, [categoryKey]);
+
+  useEffect(() => {
+    const list = strip.current;
+    const selected = list.querySelector('[aria-current]');
+    if (!selected || !list.offsetWidth) return;
+    const { left, right } = selected.getBoundingClientRect();
+    const bounds = list.getBoundingClientRect();
+    if (left < bounds.left || right > bounds.right) {
+      list.scrollBy({ left: left - bounds.left - (list.clientWidth - selected.offsetWidth) / 2 });
+    }
+  }, [active]);
+
+  useEffect(() => {
+    if (!('IntersectionObserver' in window) || scrollBehavior() === 'instant') return;
     const observer = new IntersectionObserver(
       (entries) => {
-        for (const { target, isIntersecting } of entries) {
+        for (const { isIntersecting, target } of entries) {
           if (!isIntersecting) continue;
-          reveal(target);
+          target.classList.add('menu-category-arrived');
           observer.unobserve(target);
         }
       },
-      { threshold: 0.08 },
+      { threshold: 0 },
     );
-    targets.forEach((element) => observer.observe(element));
+    catalog.current
+      .querySelectorAll('[data-category]')
+      .forEach((section) => observer.observe(section));
     return () => observer.disconnect();
-  }, [revision, query]);
+  }, [categoryKey]);
+
+  function jumpTo(index) {
+    const target = document.getElementById(`order-category-${index}`);
+    if (!target) return;
+    window.scrollTo({
+      top:
+        target.getBoundingClientRect().top + window.scrollY - toolbarOffset(toolbar.current) - 16,
+      behavior: scrollBehavior(),
+    });
+  }
+
+  function resetResultsPosition() {
+    const top = anchor.current.getBoundingClientRect().top;
+    const headerBottom = document.querySelector('.order-header').getBoundingClientRect().bottom;
+    if (top < headerBottom) {
+      window.scrollTo({ top: window.scrollY + top - headerBottom, behavior: 'instant' });
+    }
+  }
+
+  function card(item, isFeatured = false) {
+    return (
+      <MenuCard
+        key={item.id}
+        item={item}
+        featured={isFeatured}
+        value={cart[item.id]?.quantity}
+        {...{ onChange, onDetails, enabled, busy }}
+      />
+    );
+  }
 
   return (
     <>
-      <div className="bar">
+      <div id="order-menu" ref={anchor} tabIndex={-1} />
+      <div className="order-toolbar" ref={toolbar}>
         <div className="w">
-          <input
-            type="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Найти блюдо или напиток…"
-            aria-label="Поиск по меню"
-          />
-          <div className="chs">
-            <button
-              data-m
-              className={onlyAvailable ? 'on' : ''}
-              aria-pressed={onlyAvailable}
-              onClick={() => setAvailabilityFilter(!onlyAvailable)}
-            >
-              Можно заказать
-            </button>
-            <button
-              data-m
-              className={onlyAllDay ? 'on' : ''}
-              aria-pressed={onlyAllDay}
-              onClick={() => setOnlyAllDay(!onlyAllDay)}
-            >
-              Круглосуточно
-            </button>
-            {categories.map((category, index) => (
+          <div className="order-tools">
+            <label className="order-search">
+              <span className="search-icon" aria-hidden="true" />
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  resetResultsPosition();
+                }}
+                placeholder="Найти блюдо или напиток"
+                aria-label="Поиск по меню"
+              />
+            </label>
+            <div className="menu-filters" aria-label="Фильтры меню">
               <button
-                key={category}
-                data-m
-                onClick={() =>
-                  document
-                    .getElementById(`category-${index}`)
-                    ?.scrollIntoView({ behavior: 'smooth' })
-                }
+                type="button"
+                aria-pressed={onlyAvailable}
+                onClick={() => {
+                  setOnlyAvailable(!onlyAvailable);
+                  resetResultsPosition();
+                }}
               >
-                {category}
+                Можно заказать
               </button>
-            ))}
+              <button
+                type="button"
+                aria-pressed={onlyAllDay}
+                onClick={() => {
+                  setOnlyAllDay(!onlyAllDay);
+                  resetResultsPosition();
+                }}
+              >
+                Круглосуточно
+              </button>
+            </div>
           </div>
+          <nav className="menu-category-nav" aria-label="Разделы меню" hidden={!categories.length}>
+            <div className="menu-category-strip" ref={strip}>
+              {categories.map((category, index) => (
+                <button
+                  type="button"
+                  key={category}
+                  aria-current={active === category ? 'location' : undefined}
+                  onClick={() => jumpTo(index)}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+            <div className="menu-category-arrows" aria-hidden={!canScrollCategories || undefined}>
+              <button
+                type="button"
+                aria-label="Предыдущие категории"
+                disabled={!canScrollCategories}
+                onClick={() => strip.current.scrollBy({ left: -320, behavior: scrollBehavior() })}
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                aria-label="Следующие категории"
+                disabled={!canScrollCategories}
+                onClick={() => strip.current.scrollBy({ left: 320, behavior: scrollBehavior() })}
+              >
+                ›
+              </button>
+            </div>
+          </nav>
         </div>
       </div>
-      {!query && featured.length > 0 && (
-        <div className="w order-featured">
-          <p className="eb">Фирменные блюда</p>
-          <div className="sg">
-            {featured.map((item) => (
-              <article
-                key={item.id}
-                className={`sc gl ${unavailableLabel(item) ? 'stopped-photo' : ''}`}
-              >
-                <button
-                  className="photo-open"
-                  onClick={() => onDetails(item)}
-                  aria-label={`Подробнее: ${item.name}`}
-                >
-                  <img src={imageSource(item.image_url)} alt={item.name} loading="lazy" />
-                </button>
-                <div className="featured-caption">
-                  <h4>{item.name}</h4>
-                  <p>{item.description}</p>
-                  <section className="featured-price">
-                    <b>{money(item.price)}</b>
-                    <ItemAction
-                      item={item}
-                      value={cart[item.id]?.quantity}
-                      onChange={onChange}
-                      onDetails={onDetails}
-                      enabled={enabled}
-                      busy={busy}
-                    />
-                  </section>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      )}
-      <div className={`w ${query ? 'searching' : ''}`} ref={catalog}>
-        <div className="mg">
-          {categories.map((category, index) => {
-            const group = visible.filter((item) => item.category === category);
-            if (!group.length) return null;
-            const allDayCategory = group.every((item) => item.all_day);
-            return (
-              <div className="mc" key={category} id={`category-${index}`}>
-                <section className="ms gl">
-                  <div className="mh2">
-                    <span className="no">{String(index + 1).padStart(2, '0')}</span>
-                    <h3>{category}</h3>
-                    {allDayCategory && <em>24/7</em>}
-                  </div>
-                  <ul>
-                    {group.map((item, itemIndex) => (
-                      <li
-                        key={item.id}
-                        data-enter
-                        style={{ '--entry-delay': `${(itemIndex % 5) * 35}ms` }}
-                        className={`menu-line ${unavailableLabel(item) ? 'stopped-line' : ''}`}
-                      >
-                        <div className="menu-line-title">
-                          <button
-                            type="button"
-                            className="name-button menu-item-name"
-                            onClick={() => onDetails(item)}
-                          >
-                            {item.image_url && (
-                              <img
-                                className="menu-thumb"
-                                src={imageSource(item.image_url)}
-                                alt=""
-                                loading="lazy"
-                              />
-                            )}
-                            <span className="menu-name-copy">
-                              {item.name}
-                              {item.description && <small>{item.description}</small>}
-                              {item.all_day && !allDayCategory && <small>24/7</small>}
-                            </span>
-                          </button>
-                        </div>
-                        <s />
-                        <span className="line-price">{money(item.price)}</span>
-                        <div className="menu-line-action">
-                          <ItemAction
-                            item={item}
-                            value={cart[item.id]?.quantity}
-                            onChange={onChange}
-                            onDetails={onDetails}
-                            enabled={enabled}
-                            busy={busy}
-                          />
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-                <Scatter
-                  items={group.filter((item) => item.image_url)}
-                  seed={index}
-                  onDetails={onDetails}
-                />
+      <div className="w order-catalog" ref={catalog}>
+        {featured.length > 0 && (
+          <section className="menu-featured" aria-labelledby="featured-heading">
+            <h2 id="featured-heading">Фирменные блюда</h2>
+            <div className="menu-featured-grid">{featured.map((item) => card(item, true))}</div>
+          </section>
+        )}
+        {categories.map((category, index) => {
+          const group = groups.get(category);
+          return (
+            <section
+              className="menu-category"
+              data-category={category}
+              key={category}
+              id={`order-category-${index}`}
+              aria-labelledby={`order-category-heading-${index}`}
+            >
+              <div className="menu-category-heading">
+                <h2 id={`order-category-heading-${index}`}>{category}</h2>
+                {group.every((item) => item.all_day) && <span>24/7</span>}
               </div>
-            );
-          })}
-        </div>
-        {!visible.length && (
-          <p className="empty-state">Ничего не найдено. Попробуйте другой запрос.</p>
+              <div className="menu-card-grid">{group.map((item) => card(item))}</div>
+            </section>
+          );
+        })}
+        {ready && !categories.length && (
+          <div className="order-panel order-empty">
+            <h2>Ничего не найдено</h2>
+            <p>Измените запрос или сбросьте фильтры.</p>
+            <button
+              type="button"
+              className="order-button order-button-secondary"
+              onClick={() => {
+                setSearch('');
+                setOnlyAllDay(false);
+                setOnlyAvailable(false);
+                resetResultsPosition();
+              }}
+            >
+              Сбросить поиск и фильтры
+            </button>
+          </div>
         )}
       </div>
     </>
