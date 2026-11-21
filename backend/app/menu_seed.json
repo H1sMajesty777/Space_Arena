@@ -15,7 +15,8 @@
     "category": "Горячие закуски",
     "image_url": "assets/dishes/shrimp.jpg",
     "all_day": false,
-    "sort_order": 2
+    "sort_order": 2,
+    "is_hit": true
   },
   {
     "name": "Лобио по-мегрельски",
@@ -42,7 +43,8 @@
     "category": "Горячие закуски",
     "image_url": "assets/dishes/sulguni.jpg",
     "all_day": false,
-    "sort_order": 5
+    "sort_order": 5,
+    "is_hit": true
   },
   {
     "name": "Жюльен с курицей и грибами",
@@ -78,7 +80,8 @@
     "category": "Горячие блюда",
     "image_url": "assets/dishes/burger.jpg",
     "all_day": false,
-    "sort_order": 9
+    "sort_order": 9,
+    "is_hit": true
   },
   {
     "name": "Смэш-бургер",
@@ -105,7 +108,8 @@
     "category": "Горячие блюда",
     "image_url": "assets/dishes/shawarma.jpg",
     "all_day": false,
-    "sort_order": 12
+    "sort_order": 12,
+    "is_hit": true
   },
   {
     "name": "Куриный люля с сыром в слоёном тесте",
@@ -114,7 +118,8 @@
     "category": "Горячие блюда",
     "image_url": "assets/dishes/chickenPastry.jpg",
     "all_day": false,
-    "sort_order": 13
+    "sort_order": 13,
+    "is_hit": true
   },
   {
     "name": "Куриная грудка",
@@ -141,7 +146,8 @@
     "category": "Горячие блюда",
     "image_url": "assets/dishes/plov.jpg",
     "all_day": false,
-    "sort_order": 16
+    "sort_order": 16,
+    "is_hit": true
   },
   {
     "name": "Филе судака на пару",
@@ -159,7 +165,8 @@
     "category": "Горячие блюда",
     "image_url": "assets/dishes/halibut.jpg",
     "all_day": false,
-    "sort_order": 18
+    "sort_order": 18,
+    "is_hit": true
   },
   {
     "name": "Хачапури по-аджарски с яйцом",
@@ -168,7 +175,8 @@
     "category": "Хачапури",
     "image_url": "assets/dishes/hachapuriAdjar.jpg",
     "all_day": false,
-    "sort_order": 19
+    "sort_order": 19,
+    "is_hit": true
   },
   {
     "name": "Хачапури по-аджарски с помидорами",
@@ -186,7 +194,8 @@
     "category": "Хачапури",
     "image_url": "assets/dishes/hachapuriImeretian.jpg",
     "all_day": false,
-    "sort_order": 21
+    "sort_order": 21,
+    "is_hit": true
   },
   {
     "name": "По-мегрельски",
@@ -204,7 +213,8 @@
     "category": "Закуски на кухне круглосуточно",
     "image_url": "assets/dishes/beefSandwich.jpg",
     "all_day": true,
-    "sort_order": 23
+    "sort_order": 23,
+    "is_hit": true
   },
   {
     "name": "Сэндвич с куриными стрипсами",
@@ -222,7 +232,8 @@
     "category": "Закуски на кухне круглосуточно",
     "image_url": "assets/dishes/ciabatta.jpg",
     "all_day": true,
-    "sort_order": 25
+    "sort_order": 25,
+    "is_hit": true
   },
   {
     "name": "Ролл с ветчиной и сыром",
@@ -249,7 +260,8 @@
     "category": "Закуски на кухне круглосуточно",
     "image_url": "assets/dishes/hotdog.jpg",
     "all_day": true,
-    "sort_order": 28
+    "sort_order": 28,
+    "is_hit": true
   },
   {
     "name": "Маргарита",
@@ -258,7 +270,8 @@
     "category": "Пицца",
     "image_url": "assets/dishes/pizza.jpg",
     "all_day": true,
-    "sort_order": 29
+    "sort_order": 29,
+    "is_hit": true
   },
   {
     "name": "Пепперони",
@@ -303,7 +316,8 @@
     "category": "Десерты",
     "image_url": "assets/dishes/cake.jpg",
     "all_day": true,
-    "sort_order": 34
+    "sort_order": 34,
+    "is_hit": true
   },
   {
     "name": "Шоколадный трайфл",
@@ -312,7 +326,8 @@
     "category": "Десерты",
     "image_url": "assets/dishes/trifle.jpg",
     "all_day": true,
-    "sort_order": 35
+    "sort_order": 35,
+    "is_hit": true
   },
   {
     "name": "Манговый мусс",
@@ -420,7 +435,8 @@
     "category": "Холодные закуски и салаты",
     "image_url": "assets/dishes/mezze.jpg",
     "all_day": false,
-    "sort_order": 47
+    "sort_order": 47,
+    "is_hit": true
   },
   {
     "name": "Свежие овощи",
@@ -447,7 +463,8 @@
     "category": "Холодные закуски и салаты",
     "image_url": "assets/dishes/eggplantSalad.jpg",
     "all_day": false,
-    "sort_order": 50
+    "sort_order": 50,
+    "is_hit": true
   },
   {
     "name": "Оливье с курицей",
@@ -465,7 +482,8 @@
     "category": "Холодные закуски и салаты",
     "image_url": "assets/dishes/caesar.jpg",
     "all_day": false,
-    "sort_order": 52
+    "sort_order": 52,
+    "is_hit": true
   },
   {
     "name": "Цезарь с креветками",
@@ -519,7 +537,8 @@
     "category": "Супы",
     "image_url": "assets/dishes/borscht.jpg",
     "all_day": false,
-    "sort_order": 58
+    "sort_order": 58,
+    "is_hit": true
   },
   {
     "name": "Харчо из говядины",
@@ -537,7 +556,8 @@
     "category": "Супы",
     "image_url": "assets/dishes/pumpkinSoup.jpg",
     "all_day": false,
-    "sort_order": 60
+    "sort_order": 60,
+    "is_hit": true
   },
   {
     "name": "Кутабы с картофелем",
@@ -591,7 +611,8 @@
     "category": "Котлеты от шефа",
     "image_url": "assets/dishes/kyiv.jpg",
     "all_day": false,
-    "sort_order": 66
+    "sort_order": 66,
+    "is_hit": true
   },
   {
     "name": "По-домашнему из говядины",
@@ -618,7 +639,8 @@
     "category": "Блюда на мангале",
     "image_url": "assets/dishes/lulaKebab.jpg",
     "all_day": false,
-    "sort_order": 69
+    "sort_order": 69,
+    "is_hit": true
   },
   {
     "name": "Люля-кебаб из ягнёнка",
@@ -636,7 +658,8 @@
     "category": "Блюда на мангале",
     "image_url": "assets/dishes/chickenSkewer.jpg",
     "all_day": false,
-    "sort_order": 71
+    "sort_order": 71,
+    "is_hit": true
   },
   {
     "name": "Шашлык из филе индейки",
@@ -663,7 +686,8 @@
     "category": "Блюда на мангале",
     "image_url": "assets/dishes/lambRack.jpg",
     "all_day": false,
-    "sort_order": 74
+    "sort_order": 74,
+    "is_hit": true
   },
   {
     "name": "Дорадо",

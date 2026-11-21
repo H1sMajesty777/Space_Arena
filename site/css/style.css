@@ -1115,7 +1115,7 @@ footer img {
   }
 }
 
-.bar input {
+.bar input[type=search] {
   width: 100%;
   padding: 14px 22px;
   border-radius: 999px;
@@ -1140,7 +1140,7 @@ footer img {
   margin-top: 12px;
 }
 
-.chs button {
+.bar .chs button {
   flex: none;
   border: 1px solid var(--ln);
   background: none;

@@ -20,7 +20,7 @@ export function SelectionSummary({ selection }) {
   );
 }
 
-export function ItemDetails({ item, row, enabled, onClose, onSave }) {
+export function ItemOptionsForm({ item, row, enabled, onClose, onSave }) {
   const ingredients = item.removable_ingredients || [];
   const temperatures = item.temperature_options || [];
   const [removed, setRemoved] = useState(() =>
@@ -37,11 +37,10 @@ export function ItemDetails({ item, row, enabled, onClose, onSave }) {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const selection = { removed_ingredients: removed, temperature };
-  const unavailable = unavailableLabel(item);
 
   async function save(event) {
     event.preventDefault();
-    if (saving || !enabled || unavailable || !selectionMatches(item, selection)) return;
+    if (saving || !enabled || !selectionMatches(item, selection)) return;
     setSaving(true);
     setError('');
     try {
@@ -54,11 +53,94 @@ export function ItemDetails({ item, row, enabled, onClose, onSave }) {
   }
 
   return (
+    <form className="club-form item-form" onSubmit={save}>
+      {ingredients.length > 0 && (
+        <fieldset className="choice-group">
+          <legend>Убрать из блюда</legend>
+          <div className="choice-options">
+            {ingredients.map((ingredient) => (
+              <label className="choice-option" key={ingredient}>
+                <input
+                  type="checkbox"
+                  checked={removed.includes(ingredient)}
+                  onChange={(event) => {
+                    const checked = event.target.checked;
+                    setRemoved((current) =>
+                      checked
+                        ? [...current, ingredient]
+                        : current.filter((value) => value !== ingredient),
+                    );
+                  }}
+                />
+                <span>{ingredient}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
+      {temperatures.length > 0 && (
+        <fieldset className="choice-group">
+          <legend>Температура напитка</legend>
+          <div className="choice-options">
+            {temperatures.map((value) => (
+              <label className="choice-option" key={value}>
+                <input
+                  type="radio"
+                  name="temperature"
+                  value={value}
+                  checked={temperature === value}
+                  onChange={() => setTemperature(value)}
+                  required
+                />
+                <span>{TEMPERATURE_LABELS[value]}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
+      <div className="detail-actions">
+        <div className="quantity order-stepper">
+          <button
+            className="quantity-minus"
+            type="button"
+            disabled={quantity <= 1}
+            onClick={() => setQuantity(quantity - 1)}
+            aria-label="Уменьшить количество"
+          />
+          <output aria-label="Количество">{quantity}</output>
+          <button
+            className="quantity-plus"
+            type="button"
+            disabled={quantity >= MAX_QUANTITY_PER_VARIANT}
+            onClick={() => setQuantity(quantity + 1)}
+            aria-label="Увеличить количество"
+          />
+        </div>
+        <strong>{money(Number(item.price) * quantity)}</strong>
+      </div>
+      {error && (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      )}
+      <button
+        className="order-button order-button-primary"
+        disabled={saving || !enabled || !selectionMatches(item, selection)}
+      >
+        {saving ? 'Сохраняем…' : row ? 'Сохранить изменения' : 'Добавить в корзину'}
+      </button>
+    </form>
+  );
+}
+
+export function ItemDetails({ item, row, enabled, onClose, onSave }) {
+  const unavailable = unavailableLabel(item);
+  return (
     <div
       data-unavailable={Boolean(unavailable) || undefined}
-      className={`item-layout${item.image_url ? ' item-with-photo' : ''}`}
+      className="item-layout item-with-photo"
     >
-      {item.image_url && <img className="item-photo" src={imageSource(item.image_url)} alt="" />}
+      <img className="item-photo" src={imageSource(item.image_url)} alt="" />
       <section className="order-panel item-panel" aria-label="Сведения о позиции">
         <strong className="item-price">{money(item.price)}</strong>
         {item.description && <p className="item-description">{item.description}</p>}
@@ -71,83 +153,7 @@ export function ItemDetails({ item, row, enabled, onClose, onSave }) {
           </p>
         )}
         {enabled && !unavailable && (
-          <form className="club-form item-form" onSubmit={save}>
-            {ingredients.length > 0 && (
-              <fieldset className="choice-group">
-                <legend>Убрать из блюда</legend>
-                <div className="choice-options">
-                  {ingredients.map((ingredient) => (
-                    <label className="choice-option" key={ingredient}>
-                      <input
-                        type="checkbox"
-                        checked={removed.includes(ingredient)}
-                        onChange={(event) => {
-                          const checked = event.target.checked;
-                          setRemoved((current) =>
-                            checked
-                              ? [...current, ingredient]
-                              : current.filter((value) => value !== ingredient),
-                          );
-                        }}
-                      />
-                      <span>{ingredient}</span>
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-            )}
-            {temperatures.length > 0 && (
-              <fieldset className="choice-group">
-                <legend>Температура напитка</legend>
-                <div className="choice-options">
-                  {temperatures.map((value) => (
-                    <label className="choice-option" key={value}>
-                      <input
-                        type="radio"
-                        name="temperature"
-                        value={value}
-                        checked={temperature === value}
-                        onChange={() => setTemperature(value)}
-                        required
-                      />
-                      <span>{TEMPERATURE_LABELS[value]}</span>
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-            )}
-            <div className="detail-actions">
-              <div className="quantity order-stepper">
-                <button
-                  className="quantity-minus"
-                  type="button"
-                  disabled={quantity <= 1}
-                  onClick={() => setQuantity(quantity - 1)}
-                  aria-label="Уменьшить количество"
-                />
-                <output aria-label="Количество">{quantity}</output>
-                <button
-                  className="quantity-plus"
-                  type="button"
-                  disabled={quantity >= MAX_QUANTITY_PER_VARIANT}
-                  onClick={() => setQuantity(quantity + 1)}
-                  aria-label="Увеличить количество"
-                />
-              </div>
-              <strong>{money(Number(item.price) * quantity)}</strong>
-            </div>
-            {error && (
-              <p className="form-error" role="alert">
-                {error}
-              </p>
-            )}
-            <button
-              className="order-button order-button-primary"
-              disabled={saving || !selectionMatches(item, selection)}
-            >
-              {saving ? 'Сохраняем…' : row ? 'Сохранить изменения' : 'Добавить в корзину'}
-            </button>
-          </form>
+          <ItemOptionsForm {...{ item, row, enabled, onClose, onSave }} />
         )}
       </section>
     </div>

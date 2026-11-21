@@ -8,6 +8,10 @@
   outline-offset: 3px;
 }
 
+.public-featured-toggle {
+  display: none;
+}
+
 @media (max-width: 820px), (hover: none), (prefers-reduced-motion: reduce) {
   .landing-page #cg {
     display: none;
@@ -168,17 +172,69 @@
     text-align: center;
   }
 
+  .public-site {
+    scroll-padding-top: calc(var(--public-header-height, 90px) + env(safe-area-inset-top, 0px) + 12px);
+  }
+
+  .public-site .hi {
+    grid-template:
+      'brand menu booking' 46px
+      'nav nav nav' 35px / minmax(0, 1fr) auto auto;
+    gap: 2px 8px;
+    padding-block: 4px;
+  }
+
+  .public-site .hi .header-brand img {
+    height: clamp(21px, 6.8vw, 29px);
+    filter: drop-shadow(0 0 10px #8b2bff72);
+  }
+
+  .public-site .hi > :is(.header-menu, .header-booking) {
+    display: inline-flex;
+    min-height: 44px;
+    padding-inline: clamp(9px, 3vw, 15px);
+    margin: 0;
+    font-size: clamp(8px, 2.4vw, 10px);
+  }
+
+  .public-site .hi > .header-menu {
+    grid-area: menu;
+  }
+
+  .public-site .hd nav {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-top: 1px solid var(--ln);
+    margin: 0;
+  }
+
+  .public-site .hd nav a {
+    min-height: 34px;
+    border-radius: 0;
+    color: var(--mu);
+  }
+
+  .public-site .hd nav .mo {
+    display: none;
+  }
+
+  .public-site .hd nav a[aria-current] {
+    background: transparent;
+    box-shadow: inset 0 -2px var(--p2);
+    color: var(--ice);
+  }
+
   /* Главный экран, зоны и тарифы */
   .landing-page .hero {
-    position: relative;
-    display: block;
-    padding-top: 34px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(96px, 0.68fr);
+    align-items: center;
+    gap: 0 clamp(10px, 3vw, 25px);
+    padding-top: clamp(28px, 8vw, 52px);
     perspective: none;
   }
 
   .landing-page .hero-copy {
-    position: relative;
-    z-index: 1;
+    display: contents;
   }
 
   .landing-page .eb {
@@ -193,34 +249,42 @@
   }
 
   .landing-page .hero h1 {
-    font-size: clamp(42px, 12.35vw, 80px);
-    width: fit-content;
+    grid-area: 2 / 1;
+    font-size: clamp(34px, 10.9vw, 80px);
+    width: max-content;
+  }
+
+  .landing-page .hero .eb {
+    grid-area: 1 / 1;
+    align-self: end;
+    margin-bottom: 13px;
+    letter-spacing: 0.15em;
+    white-space: nowrap;
   }
 
   .landing-page .hero .ac {
-    text-shadow: none;
+    text-shadow: 0 0 27px #8b2bff8f;
   }
 
   .landing-page .hero p.lead {
-    max-width: 46ch;
-    margin: 18px 0 22px;
+    grid-column: 1 / -1;
+    max-width: 49ch;
+    margin: 21px 0 22px;
     color: #d0c6e0;
     font-size: 15px;
     line-height: 1.55;
   }
 
   .landing-page .hero .art {
-    position: absolute;
-    inset: 53px var(--mobile-gutter) auto auto;
-    width: clamp(72px, 25vw, 174px);
-    background: radial-gradient(circle, #6630a34a, transparent 70%);
+    grid-area: 1 / 2 / span 2;
+    width: 100%;
+    background: radial-gradient(circle, #7332b869, transparent 70%);
     pointer-events: none;
   }
 
   .landing-page .art .sym {
-    width: 65%;
-    filter: none;
-    opacity: 0.8;
+    width: 55%;
+    filter: drop-shadow(0 0 18px #8b2bff88);
   }
 
   .landing-page .art .chip {
@@ -234,27 +298,19 @@
     box-shadow: 0 0 9px 1px var(--p);
   }
 
-  .landing-page .art .rg:first-child {
-    inset: 10%;
-  }
-
   .landing-page .act {
+    grid-column: 1 / -1;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1.55fr) repeat(2, minmax(0, 1fr));
     gap: 8px;
     max-width: 540px;
   }
 
   .landing-page .act .btn {
-    min-height: 48px;
-    padding: 10px;
-    font-size: 11px;
-    letter-spacing: 0.04em;
-  }
-
-  .landing-page .act .hero-booking {
-    grid-column: 1 / -1;
-    min-height: 52px;
+    min-height: 44px;
+    padding: 8px 5px;
+    font-size: clamp(8px, 2.5vw, 11px);
+    letter-spacing: 0.02em;
   }
 
   .landing-page .stats {
@@ -264,12 +320,13 @@
   }
 
   .landing-page .stats div {
-    padding: 12px;
-    border-radius: 14px;
+    padding: 13px;
+    border-radius: 17px;
+    background: linear-gradient(135deg, #211438b5, #110c20af 75%);
   }
 
   .landing-page .stats b {
-    font-size: clamp(15px, 4vw, 23px);
+    font-size: clamp(16px, 5vw, 27px);
   }
 
   .landing-page .stats span {
@@ -282,7 +339,7 @@
   .landing-page .tk {
     margin-top: 24px;
     padding-block: 7px;
-    transform: none;
+    transform: rotate(-1.2deg);
   }
 
   .landing-page .tk div {
@@ -299,37 +356,45 @@
   }
 
   .landing-page .bx {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-auto-rows: auto;
     gap: 10px;
-    margin-top: 20px;
+    margin-top: 22px;
   }
 
   .landing-page .z,
   .landing-page .z:first-child {
     grid-area: auto;
     min-width: 0;
-    aspect-ratio: 16 / 10;
+    height: clamp(188px, 52vw, 275px);
     border-radius: 18px;
   }
 
+  .landing-page .z:first-child {
+    grid-column: 1 / -1;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+  }
+
   .landing-page .z div {
-    padding: 32px 14px 13px;
+    padding: 40px 12px 12px;
   }
 
   .landing-page .z h3 {
-    font-size: 15px;
+    font-size: clamp(12px, 3.35vw, 16px);
   }
 
   .landing-page .z p {
-    font-size: 13px;
+    font-size: clamp(12px, 3.2vw, 14px);
     line-height: 1.4;
   }
 
   .landing-page .z em {
-    top: 10px;
-    left: 10px;
-    padding: 7px 10px;
+    top: 9px;
+    left: 9px;
+    padding: 6px 8px;
+    font-size: 8px;
   }
 
   .landing-page .tabs {
@@ -355,7 +420,7 @@
   }
 
   .landing-page .pp {
-    padding: 100px 12px 18px;
+    padding: 22px 12px 15px;
     margin-top: 16px;
     border: 1px solid #c9a7ff38;
     border-radius: 24px;
@@ -370,7 +435,7 @@
     padding: 12px 10px;
     margin-top: 8px;
     border-radius: 14px;
-    box-shadow: none;
+    box-shadow: inset 20px 0 25px -24px #c9a7ff8c;
     background: #080614d1;
   }
 
@@ -393,11 +458,11 @@
 
   /* Меню, контакты и подвал */
   .landing-page .mt {
-    min-height: 0;
-    padding: 23px 18px;
-    border-radius: 20px;
-    background: linear-gradient(120deg, #221037, #110b20 74%);
-    box-shadow: none;
+    min-height: 238px;
+    padding: 24px 18px;
+    border-radius: 22px;
+    background: radial-gradient(ellipse at 93% 40%, #45206775, transparent 52%), #171025;
+    box-shadow: 0 14px 60px -30px #8b2bff85;
   }
 
   .landing-page .mt h2 {
@@ -407,6 +472,31 @@
   .landing-page .mt p {
     margin: 12px 0 16px;
     font-size: 14px;
+  }
+
+  .landing-page .mt p:not(.eb) {
+    max-width: min(35ch, 69%);
+  }
+
+  .public-site .mt .fd.a,
+  .public-site .mt .fd.b {
+    display: block;
+    aspect-ratio: 1;
+    border-width: 1px;
+    box-shadow: 0 6px 22px -7px #05030b, 0 0 25px -8px #8b2bff;
+  }
+
+  .public-site .mt .fd.a {
+    top: 22%;
+    right: 7%;
+    width: clamp(55px, 19vw, 145px);
+  }
+
+  .public-site .mt .fd.b {
+    right: 4%;
+    bottom: 12%;
+    width: clamp(35px, 12vw, 90px);
+    animation-delay: -2s;
   }
 
   .landing-page .mt .eb {
@@ -420,22 +510,33 @@
   }
 
   .landing-page .cg {
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
     margin-top: 20px;
   }
 
   .landing-page .cc {
     gap: 8px;
-    padding: 15px;
-    border-radius: 14px;
+    padding: 14px 12px;
+    border-radius: 16px;
+  }
+
+  .landing-page .cc .btn {
+    padding-inline: 9px;
+    font-size: 10px;
+    letter-spacing: 0.02em;
+  }
+
+  .landing-page .cc b {
+    font-size: 14px;
+    line-height: 1.4;
   }
 
   .landing-page .cc a.big {
     display: inline-grid;
     align-items: center;
     min-height: var(--mobile-control-height);
-    font-size: 18px;
+    font-size: clamp(12px, 3.3vw, 18px);
   }
 
   .landing-page .cg > div:last-child {
@@ -447,9 +548,45 @@
     padding-block: 28px 20px;
   }
 
+  .public-site .mh {
+    padding-block: 38px 25px;
+  }
+
   .landing-page .mh h1 {
     font-size: clamp(44px, 13vw, 90px);
     text-shadow: none;
+  }
+
+  .public-site .mh h1 {
+    text-shadow: 0 0 30px #8b2bff82;
+  }
+
+  .public-site .mh .fd {
+    display: block;
+    width: clamp(31px, 10.5vw, 76px);
+    aspect-ratio: 1;
+    border-width: 1px;
+    box-shadow: 0 0 26px -8px #8b2bff;
+  }
+
+  .public-site .mh .fd.a {
+    top: 23%;
+    left: var(--mobile-gutter);
+    right: auto;
+  }
+
+  .public-site .mh .fd.b {
+    top: 21%;
+    right: var(--mobile-gutter);
+    bottom: auto;
+    animation-delay: -2s;
+  }
+
+  .public-site .mh .fd.c {
+    top: 51%;
+    right: calc(var(--mobile-gutter) + 7px);
+    width: clamp(24px, 6vw, 48px);
+    animation-delay: -4s;
   }
 
   .landing-page .mh .by,
@@ -468,6 +605,10 @@
     padding-block: 7px;
   }
 
+  .public-site .bar {
+    top: calc(var(--public-header-height, 90px) + env(safe-area-inset-top, 0px));
+  }
+
   .landing-page .bar input {
     min-height: var(--mobile-control-height);
     padding: 9px 14px;
@@ -482,7 +623,7 @@
     margin: 6px 0 0;
     padding: 0;
     overflow-x: auto;
-    scrollbar-width: thin;
+    scrollbar-width: none;
     scroll-snap-type: x proximity;
     scroll-padding-inline: 0;
   }
@@ -496,6 +637,11 @@
     outline-offset: -3px;
   }
 
+  .public-site .chs {
+    padding-inline-end: 18px;
+    mask-image: linear-gradient(to right, #000 calc(100% - 16px), transparent);
+  }
+
   .landing-page .menu-featured {
     padding-top: 20px;
   }
@@ -505,29 +651,33 @@
   }
 
   .landing-page .sg {
-    display: grid;
-    grid-auto-flow: column;
-    grid-template-columns: none;
-    grid-auto-columns: clamp(125px, 42%, 176px);
-    gap: 8px;
-    overflow-x: auto;
-    scroll-snap-type: x proximity;
-    scrollbar-width: thin;
-    margin-bottom: 8px;
-    padding-bottom: 6px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .public-site .menu-featured:has(.public-featured-toggle[aria-expanded='false']) .sc:nth-child(n + 5) {
+    display: none;
+  }
+
+  .public-site .public-featured-toggle {
+    display: flex;
+    width: 100%;
+    font-size: 10px;
+    padding-block: 9px;
   }
 
   .landing-page .sc {
-    border-radius: 14px;
-    scroll-snap-align: start;
+    border-radius: 18px;
+    aspect-ratio: 1 / 1.14;
   }
 
   .landing-page .sc div {
-    padding: 28px 9px 9px;
+    padding: 42px 11px 11px;
   }
 
   .landing-page .sc h4 {
-    font-size: 10px;
+    font-size: clamp(10px, 2.9vw, 14px);
   }
 
   .landing-page .sc p {
@@ -550,8 +700,8 @@
   }
 
   .landing-page .ms {
-    padding: 13px;
-    border-radius: 14px;
+    padding: 17px 14px;
+    border-radius: 18px;
   }
 
   .landing-page .mh2 {
@@ -560,11 +710,15 @@
   }
 
   .landing-page .mh2 h3 {
-    font-size: 12px;
+    font-size: clamp(12px, 3.15vw, 16px);
     overflow-wrap: anywhere;
   }
 
-  .landing-page .mh2 .no {
+  .public-site .mh2 .no {
+    font-size: 21px;
+  }
+
+  .order-app .mh2 .no {
     display: none;
   }
 
@@ -578,12 +732,39 @@
     min-width: 0;
   }
 
-  .landing-page .ms li s {
-    display: none;
+  .public-site .ms li > div {
+    flex: 0 1 auto;
+  }
+
+  .public-site .ms li s {
+    display: block;
+    min-width: 7px;
   }
 
   .landing-page .ms li span {
     font-size: 13px;
+  }
+
+  .public-site .scatter {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-columns: auto;
+    gap: 10px 14px;
+    padding-inline: 3px;
+    overflow: visible;
+  }
+
+  .public-site .scatter .pic {
+    grid-column: span 2;
+    box-shadow: 0 12px 35px -15px #05030b, 0 0 28px -9px #8b2bff;
+  }
+
+  .public-site .scatter .pic:last-child:nth-child(odd) {
+    grid-column: 2 / span 2;
+  }
+
+  .public-site .scatter .pic.in {
+    transform: rotate(clamp(-4deg, var(--r), 4deg));
   }
 
   .landing-page .ts {
@@ -595,10 +776,25 @@
   }
 }
 
+@media (max-width: 359px) {
+  .public-site .bx,
+  .public-site .cg {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (min-width: 600px) and (max-width: 820px),
   (hover: none) and (min-width: 600px) and (max-width: 980px) {
-  .landing-page .bx {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .public-site .hero .art {
+    grid-row: 1 / span 4;
+  }
+
+  .public-site .hero :is(.act, p.lead) {
+    grid-column: 1;
+  }
+
+  .public-site .sg {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 

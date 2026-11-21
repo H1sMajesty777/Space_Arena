@@ -1,13 +1,16 @@
+import { useId, useState } from 'react';
 import { imageSource } from '../api/client';
 import { MAX_ORDER_LINES, MAX_QUANTITY_PER_VARIANT, money } from '../config/orders';
 import { hasOptions } from '../config/menu';
-import { SelectionSummary } from './ItemChoices';
+import { ItemOptionsForm, SelectionSummary } from './ItemChoices';
 
-function CartRow({ row, canEdit, onQuantityChange, onEdit }) {
+function CartRow({ row, canEdit, revision, onQuantityChange, onEdit, onSave }) {
   const { current, item, quantity, selection, unavailable, needsReview } = row;
+  const [draft, setDraft] = useState(null);
+  const optionsId = useId();
   const name = current?.name || item.name;
   const price = current?.price ?? item.price;
-  const photo = current?.image_url || item.image_url;
+  const photo = current ? current.image_url : item.image_url;
   const status =
     unavailable ||
     (needsReview && 'Настройки изменились') ||
@@ -30,12 +33,30 @@ function CartRow({ row, canEdit, onQuantityChange, onEdit }) {
             type="button"
             className="name-button cart-edit"
             disabled={!canEdit}
-            onClick={() => onEdit(row)}
+            aria-expanded={photo ? undefined : Boolean(draft)}
+            aria-controls={photo ? undefined : optionsId}
+            onClick={() => (photo ? onEdit(row) : setDraft(draft ? null : { row, revision }))}
           >
-            Изменить настройки
+            {draft && !photo ? 'Свернуть настройки' : 'Изменить настройки'}
           </button>
         )}
       </div>
+      {!photo && !unavailable && (hasOptions(current) || needsReview) && (
+        <div className="checkout-inline-options inline-options" id={optionsId} hidden={!draft}>
+          {draft && (
+            <ItemOptionsForm
+              key={JSON.stringify([current.removable_ingredients, current.temperature_options])}
+              item={current}
+              row={draft.row}
+              enabled={canEdit}
+              onClose={() => setDraft(null)}
+              onSave={(item, selection, amount) =>
+                onSave(item, selection, amount, row.key, draft.revision)
+              }
+            />
+          )}
+        </div>
+      )}
       <div className="checkout-row-end">
         <strong>{money(Number(price) * quantity)}</strong>
         <div className="quantity order-stepper">
@@ -67,6 +88,9 @@ function CartRow({ row, canEdit, onQuantityChange, onEdit }) {
 export function Checkout({
   rows,
   total,
+  quantity,
+  placeLabel,
+  revision,
   canEdit,
   sending,
   canSubmit,
@@ -75,11 +99,13 @@ export function Checkout({
   onSubmit,
   onQuantityChange,
   onEdit,
+  onSave,
   onRemoveUnavailable,
 }) {
   if (!rows.length) {
     return (
-      <div className="order-panel order-empty">
+      <div className="order-panel order-empty order-empty-feature">
+        <span className="cart-icon" aria-hidden="true" />
         <h2>Корзина пуста</h2>
         <p>Выберите блюда или напитки в меню.</p>
         <button type="button" className="order-button order-button-primary" onClick={onBack}>
@@ -90,13 +116,16 @@ export function Checkout({
   }
 
   return (
-    <form className="checkout-layout" onSubmit={onSubmit}>
+    <div className="checkout-layout">
       <div className="checkout-content">
         <section className="order-panel checkout-items" aria-labelledby="checkout-items">
           <h2 id="checkout-items">Состав заказа</h2>
           <ul>
             {rows.map((row) => (
-              <CartRow key={row.key} {...{ row, canEdit, onQuantityChange, onEdit }} />
+              <CartRow
+                key={row.key}
+                {...{ row, canEdit, revision, onQuantityChange, onEdit, onSave }}
+              />
             ))}
           </ul>
           {rows.some((row) => row.unavailable) && (
@@ -110,9 +139,11 @@ export function Checkout({
             </button>
           )}
         </section>
-        <section
+        <form
           className="order-panel checkout-fields club-form"
           aria-labelledby="checkout-fields"
+          id="checkout-order"
+          onSubmit={onSubmit}
         >
           <h2 id="checkout-fields">Детали заказа</h2>
           <label>
@@ -127,9 +158,17 @@ export function Checkout({
             </span>
             <textarea name="note" maxLength={1000} rows={3} />
           </label>
-        </section>
+        </form>
       </div>
       <aside className="order-panel checkout-summary" aria-label="Итог заказа">
+        <div className="checkout-destination">
+          <span className="cart-icon" aria-hidden="true" />
+          <div>
+            <small>Место заказа</small>
+            <b>{placeLabel}</b>
+          </div>
+          <span>{quantity} шт.</span>
+        </div>
         <div className="checkout-total">
           <span>Итого</span>
           <strong>{money(total)}</strong>
@@ -143,10 +182,15 @@ export function Checkout({
             {error && <p className="form-error">{error}</p>}
           </div>
         )}
-        <button className="order-button order-button-primary" disabled={!canSubmit}>
+        <button
+          type="submit"
+          form="checkout-order"
+          className="order-button order-button-primary"
+          disabled={!canSubmit}
+        >
           {sending ? 'Отправляем…' : 'Отправить заказ в бар'}
         </button>
       </aside>
-    </form>
+    </div>
   );
 }

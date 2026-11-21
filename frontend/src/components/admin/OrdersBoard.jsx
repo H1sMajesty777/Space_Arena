@@ -4,15 +4,16 @@ import { money, orderTotal, ORDER_STATUS } from '../../config/orders';
 import { Modal } from '../Modal';
 import { SelectionSummary } from '../ItemChoices';
 
-export function OrdersBoard({ orders, api, onChanged, onError }) {
-  const [filter, setFilter] = useState('active');
+export function OrdersBoard({ orders, filter, setFilter, api, onChanged, onError }) {
   const [busy, setBusy] = useState(null);
   const [cancel, setCancel] = useState(null);
-  const filtered = orders.filter((order) => {
-    if (filter === 'active') return !['served', 'cancelled'].includes(order.status);
-    if (filter === 'history') return ['served', 'cancelled'].includes(order.status);
-    return order.status === filter;
-  });
+  const filtered = orders
+    .filter((order) => {
+      if (filter === 'active') return !['served', 'cancelled'].includes(order.status);
+      if (filter === 'history') return ['served', 'cancelled'].includes(order.status);
+      return order.status === filter;
+    })
+    .sort((a, b) => Number(b.status === 'new') - Number(a.status === 'new'));
 
   async function changeStatus(order, status) {
     setBusy(order.id);

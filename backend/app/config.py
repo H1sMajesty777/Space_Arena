@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     admin_username: str = "admin"
     admin_password: str
     access_token_minutes: int = 60
+    admin_session_seconds: int = 604800
     uploads_dir: str = "/data/uploads"
     public_origin: str = "http://localhost:8080"
     allow_insecure_local: bool = False

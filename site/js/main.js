@@ -189,6 +189,9 @@ function renderChips() {
 
 function initMenuControls() {
   const menu = $("#menuv");
+  const header = $(".hd");
+  const bar = $(".bar", menu);
+  const featuredToggle = $(".public-featured-toggle", menu);
   const search = $("#q");
   const allDay = $('[data-filter="all-day"]', menu);
   const categories = $$("[data-category]", menu).map((button) => ({
@@ -217,15 +220,33 @@ function initMenuControls() {
   }
 
   search.addEventListener("input", filterMenu);
+  const headerObserver = new ResizeObserver(() => {
+    document.documentElement.style.setProperty("--public-header-height", `${header.offsetHeight}px`);
+  });
+  headerObserver.observe(header);
+
+  featuredToggle.addEventListener("click", () => {
+    const expanded = featuredToggle.getAttribute("aria-expanded") !== "true";
+    featuredToggle.setAttribute("aria-expanded", String(expanded));
+    featuredToggle.textContent = expanded ? "Свернуть подборку" : "Все фирменные блюда";
+    if (!expanded) featuredToggle.scrollIntoView({ block: "nearest" });
+  });
+
   allDay.addEventListener("click", () => {
     const pressed = allDay.classList.toggle("on");
     allDay.setAttribute("aria-pressed", String(pressed));
     filterMenu();
   });
   for (const { block, button } of categories) {
-    button.addEventListener("click", () =>
-      block.scrollIntoView({ block: "start" }),
-    );
+    button.addEventListener("click", () => {
+      const safeTop = parseFloat(getComputedStyle(header).top) || 0;
+      const stickyBar = getComputedStyle(bar).position === "sticky" ? bar.offsetHeight : 0;
+      const offset = header.offsetHeight + safeTop + stickyBar + 12;
+      scrollTo({
+        top: scrollY + block.getBoundingClientRect().top - offset,
+        behavior: REDUCED_MOTION.matches ? "instant" : "smooth",
+      });
+    });
   }
 }
 

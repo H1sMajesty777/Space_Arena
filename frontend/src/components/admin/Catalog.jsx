@@ -99,6 +99,7 @@ export function Catalog({ items, onEdit, api, onChanged, onError }) {
               </small>
               <h3>{item.name}</h3>
               <span>{money(item.price)}</span>
+              {item.is_hit && <b className="catalog-hit-label">✦ Хит</b>}
               {hasOptions(item) && (
                 <small className="catalog-options">Есть настройки для гостя</small>
               )}

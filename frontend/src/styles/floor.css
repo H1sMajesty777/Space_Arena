@@ -229,12 +229,6 @@
   box-shadow: inset 0 4px #c9a7ff45;
 }
 
-.floor-symbol-lounge {
-  width: 18px;
-  border-radius: 3px;
-  box-shadow: inset 0 -4px #c9a7ff45;
-}
-
 .floor-symbol-entrance {
   width: 8px;
   height: 8px;
@@ -291,6 +285,21 @@
 .club-map .floor-seat:hover {
   color: #fff;
   border-color: var(--seat-color);
+}
+
+.floor-room[data-layout='lounge'] .floor-seat-row {
+  margin-inline: 3px;
+}
+
+.club-map .floor-room[data-layout='lounge'] .floor-seat {
+  width: auto;
+  flex: 1;
+  min-height: 48px;
+}
+
+.club-map .floor-room[data-layout='ps-vip'] .floor-seat {
+  width: 65%;
+  min-height: 47px;
 }
 
 .floor-room-zone {

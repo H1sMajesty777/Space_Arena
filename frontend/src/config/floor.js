@@ -12,7 +12,7 @@ export const floors = [
       { name: 'Space VIP 2', box: [364, 12, 116, 212], rows: [[31], [30], [29], [28], [27], [26]] },
       { name: 'PS Open', box: [488, 12, 98, 212], rows: [[44], [43], [42]] },
       { name: 'Бар', box: [594, 12, 114, 84], landmark: true, icon: 'bar' },
-      { name: 'Лаунж-зона', box: [594, 104, 114, 120], landmark: true, icon: 'lounge' },
+      { name: 'Лаунж-зона', box: [594, 104, 114, 120], rows: [[65, 66]], layout: 'lounge' },
       { name: 'Duo', box: [12, 258, 155, 62], rows: [[9, 10]] },
       { name: 'Trio', box: [12, 328, 155, 62], rows: [[6, 7, 8]] },
       {
@@ -26,7 +26,7 @@ export const floors = [
       { name: 'Space Room', box: [204, 366, 142, 124], rows: [[64]], zone: true },
       { name: 'Стойка администратора', box: [356, 366, 180, 71], landmark: true },
       { name: 'Вход', box: [356, 450, 180, 40], landmark: true, icon: 'entrance' },
-      { name: 'PS VIP', box: [547, 283, 161, 207], rows: [[45], [46]] },
+      { name: 'PS VIP', box: [547, 283, 161, 207], rows: [[45], [46]], layout: 'ps-vip' },
     ],
   },
   {
@@ -69,12 +69,14 @@ export const floors = [
 
 export const FLOOR_HEIGHT = 502;
 export const tableAliases = {
-  42: 'TV1',
-  43: 'TV2',
-  44: 'TV3',
-  45: 'TV4',
-  46: 'TV5',
-  64: 'Space Room',
+  42: 'TV1(66)',
+  43: 'TV2(65)',
+  44: 'TV3(64)',
+  45: 'TV4(67)',
+  46: 'TV5(68)',
+  64: 'Space Room(69)',
+  65: 'T1(70)',
+  66: 'T2(71)'
 };
 
 export const placeName = (number) => tableAliases[number] ?? `Стол ${number ?? '—'}`;

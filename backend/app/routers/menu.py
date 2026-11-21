@@ -14,9 +14,9 @@ from .access import require_guest
 
 router = APIRouter()
 
-MENU_CACHE_KEY = "menu:all:v4"
+MENU_CACHE_KEY = "menu:all:v5"
 MENU_CACHE_SECONDS = 15
-REQUIRED_ITEM_FIELDS = ("name", "price", "category", "all_day", "sort_order")
+REQUIRED_ITEM_FIELDS = ("name", "price", "category", "all_day", "sort_order", "is_hit")
 
 
 # Каталог и кеш
@@ -73,6 +73,8 @@ async def admin_menu(db: AsyncSession = Depends(get_db)):
 
 @router.post("/api/admin/menu", response_model=MenuItemOut, status_code=201, dependencies=[Depends(require_admin)])
 async def create_menu_item(payload: MenuItemCreate, db: AsyncSession = Depends(get_db)):
+    if payload.is_hit and not payload.image_url:
+        raise HTTPException(422, "Добавьте фото, чтобы отметить позицию как хит")
     item = MenuItem(**payload.model_dump())
     db.add(item)
     return await save_item(item, db)
@@ -84,6 +86,10 @@ async def update_menu_item(item_id: int, payload: MenuItemUpdate, db: AsyncSessi
     changes = payload.model_dump(exclude_unset=True)
     if any(key in changes and changes[key] is None for key in REQUIRED_ITEM_FIELDS):
         raise HTTPException(422, "Заполните обязательные поля позиции")
+    if not changes.get("image_url", item.image_url):
+        if changes.get("is_hit"):
+            raise HTTPException(422, "Добавьте фото, чтобы отметить позицию как хит")
+        changes["is_hit"] = False
     for key, value in changes.items():
         setattr(item, key, value)
     return await save_item(item, db)

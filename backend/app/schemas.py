@@ -17,6 +17,7 @@ Ingredient = Annotated[str, StringConstraints(strip_whitespace=True, min_length=
 Ingredients = Annotated[list[Ingredient], Field(max_length=20), AfterValidator(distinct_options)]
 Temperature = Literal["cold", "warm"]
 Temperatures = Annotated[list[Temperature], Field(max_length=2), AfterValidator(distinct_options)]
+ImageUrl = Annotated[str, StringConstraints(strip_whitespace=True, max_length=255)]
 
 
 class LoginRequest(BaseModel):
@@ -32,7 +33,8 @@ class TokenResponse(BaseModel):
 class MenuItemCreate(BaseModel):
     name: str = Field(min_length=1, max_length=160)
     category: str = Field(default="Меню", min_length=1, max_length=100)
-    image_url: str | None = Field(default=None, max_length=255)
+    image_url: ImageUrl | None = None
+    is_hit: bool = False
     all_day: bool = False
     removable_ingredients: Ingredients = Field(default_factory=list)
     temperature_options: Temperatures = Field(default_factory=list)
@@ -54,7 +56,8 @@ class GuestMenuItemOut(MenuItemOut):
 class MenuItemUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=160)
     category: str | None = Field(default=None, min_length=1, max_length=100)
-    image_url: str | None = Field(default=None, max_length=255)
+    image_url: ImageUrl | None = None
+    is_hit: bool | None = None
     all_day: bool | None = None
     removable_ingredients: Ingredients = Field(default_factory=list)
     temperature_options: Temperatures = Field(default_factory=list)

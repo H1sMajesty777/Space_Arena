@@ -12,6 +12,7 @@ from .security import password_hash
 
 
 async def initialize_database():
+    seed = json.loads((Path(__file__).parent / "menu_seed.json").read_text(encoding="utf-8"))
     # ADD COLUMN IF NOT EXISTS сохраняет уже созданные заказы и позиции.
     migrations = [
         "ALTER TABLE orders ADD COLUMN IF NOT EXISTS table_id INTEGER REFERENCES tables(id)",
@@ -50,6 +51,7 @@ async def initialize_database():
         "CREATE INDEX IF NOT EXISTS ix_orders_guest_key_hash ON orders (guest_key_hash)",
         "ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS category VARCHAR(100) NOT NULL DEFAULT 'Меню'",
         "ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS image_url VARCHAR(255)",
+        "ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS is_hit BOOLEAN",
         "ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS all_day BOOLEAN NOT NULL DEFAULT FALSE",
         "ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS removable_ingredients JSON NOT NULL DEFAULT '[]'",
         "ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS temperature_options JSON NOT NULL DEFAULT '[]'",
@@ -60,8 +62,19 @@ async def initialize_database():
         await connection.run_sync(Base.metadata.create_all)
         for statement in migrations:
             await connection.execute(text(statement))
+        await connection.execute(
+            text("""
+                UPDATE menu_items
+                SET is_hit = COALESCE(btrim(image_url) <> '', FALSE)
+                    AND name = ANY(CAST(:hit_names AS VARCHAR[]))
+                WHERE is_hit IS NULL
+            """),
+            {"hit_names": [item["name"] for item in seed if item.get("is_hit")]},
+        )
+        await connection.execute(text(
+            "ALTER TABLE menu_items ALTER COLUMN is_hit SET DEFAULT FALSE, ALTER COLUMN is_hit SET NOT NULL"
+        ))
 
-    seed = json.loads((Path(__file__).parent / "menu_seed.json").read_text(encoding="utf-8"))
     async with SessionLocal() as session:
         admin = await session.scalar(select(AdminUser).where(AdminUser.username == settings.admin_username))
         if admin is None:

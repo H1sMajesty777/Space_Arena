@@ -21,6 +21,7 @@ class MenuItem(Base):
     name: Mapped[str] = mapped_column(String(160), index=True)
     category: Mapped[str] = mapped_column(String(100), default="Меню")
     image_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    is_hit: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
     all_day: Mapped[bool] = mapped_column(Boolean, default=False)
     removable_ingredients: Mapped[list[str]] = mapped_column(JSON, default=list, server_default=text("'[]'"))
     temperature_options: Mapped[list[str]] = mapped_column(JSON, default=list, server_default=text("'[]'"))

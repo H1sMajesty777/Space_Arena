@@ -8,8 +8,10 @@ export function ItemEditor({ item, categories, api, onSaved, onClose }) {
   const [photo, setPhoto] = useState(null);
   const [preview, setPreview] = useState(imageSource(item?.image_url));
   const [removePhoto, setRemovePhoto] = useState(false);
+  const [isHit, setIsHit] = useState(Boolean(item?.is_hit));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const hasPhoto = !removePhoto && Boolean(photo || item?.image_url);
 
   useEffect(() => {
     if (!photo) return;
@@ -65,6 +67,7 @@ export function ItemEditor({ item, categories, api, onSaved, onClose }) {
         category: fields.get('category').trim(),
         price: fields.get('price'),
         all_day: fields.get('schedule') === 'all_day',
+        is_hit: isHit && Boolean(imageUrl),
         removable_ingredients: ingredients,
         temperature_options: fields.getAll('temperature_options'),
         image_url: imageUrl,
@@ -126,6 +129,7 @@ export function ItemEditor({ item, categories, api, onSaved, onClose }) {
               className="quiet-button"
               onClick={() => {
                 setRemovePhoto(true);
+                setIsHit(false);
                 setPhoto(null);
                 setPreview('');
               }}
@@ -140,6 +144,25 @@ export function ItemEditor({ item, categories, api, onSaved, onClose }) {
             сохранения.
           </p>
         )}
+        <label className="item-hit-toggle">
+          <input
+            type="checkbox"
+            role="switch"
+            aria-labelledby="item-hit-label"
+            aria-describedby="item-hit-hint"
+            disabled={busy || !hasPhoto}
+            checked={isHit}
+            onChange={(event) => setIsHit(event.target.checked)}
+          />
+          <span>
+            <strong id="item-hit-label">Хит</strong>
+            <small id="item-hit-hint">
+              {hasPhoto
+                ? 'Фото появится под разделом в гостевом меню.'
+                : 'Добавьте фото, чтобы сделать позицию хитом.'}
+            </small>
+          </span>
+        </label>
         <label>
           Название
           <input name="name" defaultValue={item?.name || ''} maxLength="160" required />

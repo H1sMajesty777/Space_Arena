@@ -199,8 +199,8 @@ export function OrderPage() {
     if (issue) (view.name === 'cart' ? setCheckoutError : setError)(issue);
   }
 
-  async function saveSelection(item, selection, amount, previousKey) {
-    if (previousKey && sharedCart && view.editRevision !== sharedCart.revision) {
+  async function saveSelection(item, selection, amount, previousKey, editRevision) {
+    if (previousKey && sharedCart && editRevision !== sharedCart.revision) {
       return 'Корзина изменилась на другом устройстве. Откройте позицию заново.';
     }
     const key = cartKey(item.id, selection);
@@ -245,7 +245,8 @@ export function OrderPage() {
   const canSubmit = canEdit && !hasBlocked && rows.length > 0 && rows.length <= MAX_ORDER_LINES;
   const editingRow = view.name === 'item' && view.rowKey;
   const detailRow = editingRow && rows.find((row) => row.key === editingRow);
-  const detailItem = view.name === 'item' && itemsById.get(view.itemId);
+  const requestedItem = view.name === 'item' && itemsById.get(view.itemId);
+  const detailItem = requestedItem?.image_url ? requestedItem : null;
 
   async function removeUnavailable() {
     const availableKeys = rows.filter((row) => !row.unavailable).map((row) => row.key);
@@ -296,7 +297,11 @@ export function OrderPage() {
   }
 
   const shopView =
-    table && !accessError ? view.name : view.name === 'item' && !accessError ? 'item' : 'menu';
+    accessError ||
+    (view.name === 'item' && !detailItem && (table || online)) ||
+    (!table && view.name !== 'item')
+      ? 'menu'
+      : view.name;
   const kitchenClosed = items.some((item) => item.unavailable_reason === 'kitchen_closed');
   const menuAction = () => back('menu');
   const orderAction = () => navigate('orders');
@@ -382,7 +387,8 @@ export function OrderPage() {
           items={items}
           cart={cart}
           onChange={changeQuantity}
-          onDetails={(item) => navigate('item', { itemId: item.id })}
+          onDetails={(item) => item.image_url && navigate('item', { itemId: item.id })}
+          onSave={saveSelection}
           enabled={orderEnabled}
           busy={cartBusy || sending}
           ready={online || items.length > 0}
@@ -407,6 +413,9 @@ export function OrderPage() {
           <Checkout
             rows={rows}
             total={total}
+            quantity={quantity}
+            placeLabel={placeLabel}
+            revision={sharedCart?.revision}
             canEdit={canEdit}
             sending={sending}
             canSubmit={canSubmit}
@@ -414,6 +423,7 @@ export function OrderPage() {
             onBack={menuAction}
             onSubmit={submitOrder}
             onQuantityChange={changeQuantity}
+            onSave={saveSelection}
             onEdit={(row) =>
               navigate('item', {
                 itemId: row.current.id,
@@ -427,9 +437,10 @@ export function OrderPage() {
       )}
 
       {shopView === 'orders' && (
-        <main className="w order-subpage" tabIndex={-1}>
+        <main className="w order-subpage order-history-page" tabIndex={-1}>
           <OrderHeading
             title="Мои заказы"
+            label={placeLabel}
             backLabel="К меню"
             onBack={menuAction}
             action={
@@ -457,7 +468,8 @@ export function OrderPage() {
               <GuestOrders orders={orders} menuItems={items} />
             </>
           ) : (
-            <div className="order-panel order-empty">
+            <div className="order-panel order-empty order-empty-feature">
+              <span className="history-icon" aria-hidden="true" />
               <h2>Заказов пока нет</h2>
               <p>Здесь появятся отправленные заказы и их статусы.</p>
               <button
@@ -493,7 +505,7 @@ export function OrderPage() {
               enabled={orderEnabled && !sending}
               onClose={backFromItem}
               onSave={(item, selection, count) =>
-                saveSelection(item, selection, count, view.rowKey)
+                saveSelection(item, selection, count, view.rowKey, view.editRevision)
               }
             />
           )}
@@ -556,7 +568,9 @@ function OrderHeading({ title, label, backLabel, onBack, action }) {
       <div className="order-page-title">
         <div>
           {label && <p>{label}</p>}
-          <h1 tabIndex={-1}>{title}</h1>
+          <h1 className="gr" tabIndex={-1}>
+            {title}
+          </h1>
         </div>
         {action}
       </div>

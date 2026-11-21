@@ -29,50 +29,55 @@ function FloorPlan({ floor, tables, onSelect }) {
           >
             <path d={floor.corridors} />
           </svg>
-          {floor.rooms.map(({ name, box: [x, y, width, height], rows, landmark, icon, zone }) => (
-            <div
-              key={`${x}:${y}`}
-              className={`floor-room${landmark ? ' floor-landmark' : ''}${zone ? ' floor-room-zone' : ''}`}
-              style={{
-                left: `${(x / floor.width) * 100}%`,
-                top: `${(y / FLOOR_HEIGHT) * 100}%`,
-                width: `${(width / floor.width) * 100}%`,
-                height: `${(height / FLOOR_HEIGHT) * 100}%`,
-              }}
-            >
-              {icon && <span className={`floor-symbol floor-symbol-${icon}`} aria-hidden="true" />}
-              {!zone && <span className="floor-room-name">{name}</span>}
-              {rows && (
-                <div className="floor-seats">
-                  {rows.map((row) => (
-                    <div className="floor-seat-row" key={row[0]}>
-                      {row.map((number) => {
-                        if (!number) return <span key="gap" className="floor-seat-gap" />;
-                        const table = tables?.get(number);
-                        const affected = table?.order_count || table?.flagged;
-                        const label = placeName(number);
-                        const status = tables ? tableStatus(table) : 'Загружаем статус';
-                        return (
-                          <button
-                            key={number}
-                            type="button"
-                            className="floor-seat"
-                            data-bill={tables ? (affected ? 'open' : 'clear') : 'loading'}
-                            aria-label={`${label}${zone ? '' : `, ${name}`}. ${status}`}
-                            title={`${label} · ${status}`}
-                            aria-haspopup="dialog"
-                            onClick={() => onSelect(number)}
-                          >
-                            {tableAliases[number] || number}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+          {floor.rooms.map(
+            ({ name, box: [x, y, width, height], rows, landmark, icon, zone, layout }) => (
+              <div
+                key={`${x}:${y}`}
+                className={`floor-room${landmark ? ' floor-landmark' : ''}${zone ? ' floor-room-zone' : ''}`}
+                data-layout={layout}
+                style={{
+                  left: `${(x / floor.width) * 100}%`,
+                  top: `${(y / FLOOR_HEIGHT) * 100}%`,
+                  width: `${(width / floor.width) * 100}%`,
+                  height: `${(height / FLOOR_HEIGHT) * 100}%`,
+                }}
+              >
+                {icon && (
+                  <span className={`floor-symbol floor-symbol-${icon}`} aria-hidden="true" />
+                )}
+                {!zone && <span className="floor-room-name">{name}</span>}
+                {rows && (
+                  <div className="floor-seats">
+                    {rows.map((row) => (
+                      <div className="floor-seat-row" key={row[0]}>
+                        {row.map((number) => {
+                          if (!number) return <span key="gap" className="floor-seat-gap" />;
+                          const table = tables?.get(number);
+                          const affected = table?.order_count || table?.flagged;
+                          const label = placeName(number);
+                          const status = tables ? tableStatus(table) : 'Загружаем статус';
+                          return (
+                            <button
+                              key={number}
+                              type="button"
+                              className="floor-seat"
+                              data-bill={tables ? (affected ? 'open' : 'clear') : 'loading'}
+                              aria-label={`${label}${zone ? '' : `, ${name}`}. ${status}`}
+                              title={`${label} · ${status}`}
+                              aria-haspopup="dialog"
+                              onClick={() => onSelect(number)}
+                            >
+                              {tableAliases[number] || number}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ),
+          )}
         </div>
       </div>
     </section>
