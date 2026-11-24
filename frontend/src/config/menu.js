@@ -1,6 +1,7 @@
 import { kitchen } from '../../../backend/club-settings.json';
 
 export const KITCHEN_HOURS = `${kitchen.opens}–${kitchen.closes}`;
+export const PUBLIC_KITCHEN_HOURS = `${kitchen.opens} – ${kitchen.closes}`;
 export const KITCHEN_TIME_ZONE_LABEL = kitchen.time_zone_label;
 
 export const TEMPERATURE_LABELS = {

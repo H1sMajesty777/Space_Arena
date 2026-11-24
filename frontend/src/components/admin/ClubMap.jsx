@@ -6,8 +6,26 @@ import { Modal } from '../Modal';
 
 function tableStatus(table) {
   if (table?.order_count) return 'Есть неоплаченные заказы';
-  if (table?.flagged) return 'Отмечен вручную';
+  if (table?.flagged) return 'Есть ручная отметка';
   return 'Нет открытого счёта';
+}
+
+function FloorButton({ label, room, table, loading, onClick, children }) {
+  const status = loading ? 'Загружаем статус' : tableStatus(table);
+  const affected = table?.order_count || table?.flagged;
+  return (
+    <button
+      type="button"
+      className="floor-seat"
+      data-bill={loading ? 'loading' : affected ? 'open' : 'clear'}
+      aria-label={`${label}${room ? `, ${room}` : ''}. ${status}`}
+      title={`${label} · ${status}`}
+      aria-haspopup="dialog"
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  );
 }
 
 function FloorPlan({ floor, tables, onSelect }) {
@@ -29,11 +47,24 @@ function FloorPlan({ floor, tables, onSelect }) {
           >
             <path d={floor.corridors} />
           </svg>
-          {floor.rooms.map(
-            ({ name, box: [x, y, width, height], rows, landmark, icon, zone, layout }) => (
+          {floor.rooms.map((room) => {
+            const {
+              name,
+              box: [x, y, width, height],
+              rows,
+              landmark,
+              icon,
+              tableNumbers,
+              layout,
+            } = room;
+            const roomTables = tableNumbers?.map((number) => tables?.get(number));
+            const roomBill =
+              roomTables?.find((table) => table?.order_count) ??
+              roomTables?.find((table) => table?.flagged);
+            return (
               <div
                 key={`${x}:${y}`}
-                className={`floor-room${landmark ? ' floor-landmark' : ''}${zone ? ' floor-room-zone' : ''}`}
+                className={`floor-room${landmark ? ' floor-landmark' : ''}${tableNumbers ? ' floor-room-zone' : ''}`}
                 data-layout={layout}
                 style={{
                   left: `${(x / floor.width) * 100}%`,
@@ -45,30 +76,35 @@ function FloorPlan({ floor, tables, onSelect }) {
                 {icon && (
                   <span className={`floor-symbol floor-symbol-${icon}`} aria-hidden="true" />
                 )}
-                {!zone && <span className="floor-room-name">{name}</span>}
+                {tableNumbers ? (
+                  <FloorButton
+                    label={name}
+                    table={roomBill}
+                    loading={!tables}
+                    onClick={() => onSelect(room)}
+                  >
+                    {name}
+                  </FloorButton>
+                ) : (
+                  <span className="floor-room-name">{name}</span>
+                )}
                 {rows && (
                   <div className="floor-seats">
                     {rows.map((row) => (
                       <div className="floor-seat-row" key={row[0]}>
                         {row.map((number) => {
                           if (!number) return <span key="gap" className="floor-seat-gap" />;
-                          const table = tables?.get(number);
-                          const affected = table?.order_count || table?.flagged;
-                          const label = placeName(number);
-                          const status = tables ? tableStatus(table) : 'Загружаем статус';
                           return (
-                            <button
+                            <FloorButton
                               key={number}
-                              type="button"
-                              className="floor-seat"
-                              data-bill={tables ? (affected ? 'open' : 'clear') : 'loading'}
-                              aria-label={`${label}${zone ? '' : `, ${name}`}. ${status}`}
-                              title={`${label} · ${status}`}
-                              aria-haspopup="dialog"
+                              label={placeName(number)}
+                              room={name}
+                              table={tables?.get(number)}
+                              loading={!tables}
                               onClick={() => onSelect(number)}
                             >
                               {tableAliases[number] || number}
-                            </button>
+                            </FloorButton>
                           );
                         })}
                       </div>
@@ -76,8 +112,8 @@ function FloorPlan({ floor, tables, onSelect }) {
                   </div>
                 )}
               </div>
-            ),
-          )}
+            );
+          })}
         </div>
       </div>
     </section>
@@ -90,10 +126,11 @@ export function ClubMap({ tables, api, onChanged }) {
   const byNumber = tables && new Map(tables.map((table) => [table.number, table]));
   const open = tables?.filter((table) => table.order_count || table.flagged) || [];
   const offMap = tables?.filter((table) => !tableRooms.has(table.number)) || [];
+  const selectedRoom = selected?.tableNumbers ? selected : null;
 
-  function select(number) {
+  function select(place) {
     setMessage('');
-    setSelected(number);
+    setSelected(place);
   }
 
   async function onSaved(message) {
@@ -163,15 +200,37 @@ export function ClubMap({ tables, api, onChanged }) {
           </div>
         </section>
       )}
-      {selected !== null && (
-        <TableBill
-          key={selected}
-          number={selected}
-          summary={byNumber?.get(selected)}
-          api={api}
-          onClose={() => setSelected(null)}
-          onSaved={onSaved}
-        />
+      {selectedRoom ? (
+        <Modal title={selectedRoom.name} onClose={() => setSelected(null)}>
+          <div className="floor-links floor-room-tables">
+            {selectedRoom.tableNumbers.map((number) => {
+              const table = byNumber?.get(number);
+              return (
+                <button
+                  key={number}
+                  type="button"
+                  aria-haspopup="dialog"
+                  data-bill={table?.order_count || table?.flagged ? 'open' : undefined}
+                  onClick={() => select(number)}
+                >
+                  <strong>{placeName(number)}</strong>
+                  <span>{byNumber ? tableStatus(table) : 'Загружаем статус'}</span>
+                </button>
+              );
+            })}
+          </div>
+        </Modal>
+      ) : (
+        selected !== null && (
+          <TableBill
+            key={selected}
+            number={selected}
+            summary={byNumber?.get(selected)}
+            api={api}
+            onClose={() => setSelected(null)}
+            onSaved={onSaved}
+          />
+        )
       )}
     </section>
   );

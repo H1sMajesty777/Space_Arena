@@ -8,5 +8,7 @@
   "orders": {
     "max_lines": 50,
     "max_quantity_per_variant": 50
-  }
+  },
+  "space_room_tables": [42, 43, 44, 45, 46],
+  "playstation_tables": [72, 73, 74, 75, 76]
 }

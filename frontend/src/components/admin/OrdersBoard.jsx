@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { placeName, tableAliases } from '../../config/floor';
+import { placeName, spaceRoomTables, tableAliases, tableRooms } from '../../config/floor';
 import { money, orderTotal, ORDER_STATUS } from '../../config/orders';
 import { Modal } from '../Modal';
 import { SelectionSummary } from '../ItemChoices';
@@ -51,16 +51,21 @@ export function OrdersBoard({ orders, filter, setFilter, api, onChanged, onError
       <div className="orders-board">
         {filtered.map((order) => {
           const status = ORDER_STATUS[order.status];
+          const { table_number: number, pc_number: pcNumber } = order;
+          const inSpaceRoom = spaceRoomTables.includes(number);
+          const place =
+            pcNumber && !inSpaceRoom && !tableAliases[number]
+              ? `ПК №${pcNumber}`
+              : placeName(number);
           return (
             <article key={order.id} className={`order-ticket bar-ticket ticket-${order.status}`}>
               <header>
                 <div className="bar-ticket-heading">
-                  <h3>
-                    {order.pc_number && !tableAliases[order.table_number]
-                      ? `ПК №${order.pc_number}`
-                      : placeName(order.table_number)}
-                  </h3>
-                  <p>Заказ №{order.id}</p>
+                  <h3>{place}</h3>
+                  <p>
+                    Заказ №{order.id}
+                    {inSpaceRoom && ` · ${tableRooms.get(number)}`}
+                  </p>
                 </div>
                 <span className="order-ticket-status">{status?.label || order.status}</span>
               </header>

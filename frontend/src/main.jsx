@@ -3,9 +3,6 @@ import { createRoot } from 'react-dom/client';
 import { OrderPage } from './pages/OrderPage';
 import { BarPage } from './pages/BarPage';
 import { Sky } from './components/Sky';
-import './styles/club.css';
-import './styles/order.css';
-import './styles/floor.css';
 
 const Page = location.pathname.includes('bar.html') ? BarPage : OrderPage;
 

@@ -4,10 +4,12 @@ import json
 from pathlib import Path
 
 from sqlalchemy import select, text
+from sqlalchemy.dialects.postgresql import insert
 
+from .club_settings import CLUB_SETTINGS
 from .config import settings
 from .database import Base, SessionLocal, engine
-from .models import AdminUser, MenuItem
+from .models import AdminUser, ClubTable, MenuItem
 from .security import password_hash
 
 
@@ -62,6 +64,12 @@ async def initialize_database():
         await connection.run_sync(Base.metadata.create_all)
         for statement in migrations:
             await connection.execute(text(statement))
+        table_numbers = [*CLUB_SETTINGS["space_room_tables"], *CLUB_SETTINGS["playstation_tables"]]
+        await connection.execute(
+            insert(ClubTable)
+            .values([{"number": number} for number in table_numbers])
+            .on_conflict_do_nothing(index_elements=[ClubTable.number])
+        )
         await connection.execute(
             text("""
                 UPDATE menu_items

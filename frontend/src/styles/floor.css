@@ -102,7 +102,8 @@
   background: #271638;
 }
 
-.floor-open .floor-links button {
+.floor-open .floor-links button,
+.floor-room-tables button[data-bill='open'] {
   border-color: #ff8ca35c;
   background: #ff547c12;
 }
@@ -111,7 +112,8 @@
   color: var(--mu);
 }
 
-.floor-open .floor-links button span {
+.floor-open .floor-links button span,
+.floor-room-tables button[data-bill='open'] span {
   color: var(--floor-open);
 }
 
@@ -300,6 +302,15 @@
 .club-map .floor-room[data-layout='ps-vip'] .floor-seat {
   width: 65%;
   min-height: 47px;
+}
+
+.floor-room-tables {
+  display: grid;
+}
+
+.floor-room-tables button {
+  flex-wrap: wrap;
+  justify-content: space-between;
 }
 
 .floor-room-zone {

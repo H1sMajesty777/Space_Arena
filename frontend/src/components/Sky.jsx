@@ -5,7 +5,7 @@ const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
 const COMPACT_FRAME_MS = 50;
 const MAX_COMPACT_STARS = 56;
 
-export function Sky({ cursorGlow = false }) {
+export function Sky({ className = 'space-sky club-sky', cursorGlow = false }) {
   const reference = useRef(null);
   const glowRef = useRef(null);
 
@@ -155,7 +155,7 @@ export function Sky({ cursorGlow = false }) {
   }, [cursorGlow]);
 
   return (
-    <div className="space-sky club-sky" aria-hidden="true">
+    <div className={className} aria-hidden="true">
       <canvas id="sky" ref={reference} />
       <div className="au a" />
       <div className="au b" />

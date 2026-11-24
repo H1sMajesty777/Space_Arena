@@ -265,9 +265,6 @@ a {
   }
 }
 
-body.mv #home,body:not(.mv) #menuv {
-  display: none;
-}
 
 /* ============================================================
    Секции и заголовки
@@ -1253,10 +1250,13 @@ footer img {
 }
 
 .no2 {
-  display: none;
   text-align: center;
   color: var(--mu);
   padding: 40px;
+}
+
+.public-site #menuv [hidden] {
+  display: none;
 }
 
 /* ============================================================

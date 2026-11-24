@@ -4,10 +4,8 @@
  * Рабочая база не изменяется: созданные барменом позиции хранятся в PostgreSQL.
  */
 import fs from 'node:fs';
-import vm from 'node:vm';
+import { MENU } from '../frontend/src/features/public-site/content.js';
 
-const source = fs.readFileSync('site/js/data.js', 'utf8');
-const MENU = vm.runInNewContext(`${source}; MENU`);
 const seedPath = 'backend/app/menu_seed.json';
 const seed = JSON.parse(fs.readFileSync(seedPath, 'utf8').replace(/^\uFEFF/, ''));
 const variantNames = {

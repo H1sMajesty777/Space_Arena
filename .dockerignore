@@ -9,5 +9,4 @@ banner
 docs
 demo
 scripts/*
-!scripts/sync-kitchen-hours.mjs
 *.log
