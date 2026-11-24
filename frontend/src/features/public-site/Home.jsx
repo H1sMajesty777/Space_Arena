@@ -3,6 +3,7 @@ import { images } from './images';
 import { Prices } from './Prices';
 import { AnimatedNumber, HeadlineWord } from './AnimatedText';
 import { PUBLIC_KITCHEN_HOURS } from '../../config/menu';
+import { SiteBrand } from '../../components/SiteBrand';
 
 const zones = [
   {
@@ -65,7 +66,7 @@ function Hero({ booking }) {
           <i className="rg" />
           <i className="rg" />
           <i className="rg" />
-          <img className="sym" src={images.symbol} alt="" draggable={false} />
+          <SiteBrand className="sym" src={images.symbol} />
           <span className="chip a">
             <i />
             SYSTEM ONLINE

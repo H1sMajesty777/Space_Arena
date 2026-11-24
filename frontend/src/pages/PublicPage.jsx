@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Sky } from '../components/Sky';
+import { SiteBrand } from '../components/SiteBrand';
 import { contacts } from '../features/public-site/contacts';
 import { Home } from '../features/public-site/Home';
 import { images } from '../features/public-site/images';
@@ -127,7 +128,7 @@ export function PublicPage() {
       <header className="hd" ref={header}>
         <div className="w hi">
           <a className="header-brand" href="#home" aria-label="SPACE ARENA">
-            <img src={images.logo} alt="SPACE ARENA" draggable={false} />
+            <SiteBrand src={images.logo} alt="SPACE ARENA" />
           </a>
           <nav aria-label="Основная навигация">
             {links.map(({ href, header: label }) => (

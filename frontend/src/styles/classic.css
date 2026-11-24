@@ -1,0 +1,24 @@
+:root {
+  --bg: #05030b;
+  --p: #8b2bff;
+  --p2: #c9a7ff;
+  --pk: #e04bff;
+  --ice: #f4efff;
+  --mu: #a79fbd;
+  --ln: rgb(201 167 255 / 0.16);
+}
+
+.space-sky {
+  background:
+    radial-gradient(ellipse 90% 65% at 95% 0%, #38156096, transparent),
+    radial-gradient(ellipse 85% 65% at 0% 100%, #28134d7d, transparent),
+    var(--bg);
+}
+
+.au.a {
+  background: radial-gradient(circle, #8b2bff99, transparent 68%);
+}
+
+.au.b {
+  background: radial-gradient(circle, #4a1fd699, transparent 68%);
+}

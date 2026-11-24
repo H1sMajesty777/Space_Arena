@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { OrderPage } from './pages/OrderPage';
 import { BarPage } from './pages/BarPage';
 import { Sky } from './components/Sky';
+import './styles/winter.css';
 
 const Page = location.pathname.includes('bar.html') ? BarPage : OrderPage;
 

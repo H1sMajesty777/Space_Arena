@@ -29,6 +29,12 @@
 
 После изменений пересоберите сайт и API командой `docker compose up -d --build --wait`. Часы кухни берутся из `club-settings.json` при сборке. Для работы над публичной страницей запустите `npm run dev --prefix frontend` и откройте http://127.0.0.1:5173/. Команда `npm run build --prefix frontend` также создаёт `frontend/dist/standalone.html`, который можно открыть с диска.
 
+### Тема сайта
+
+Из корня проекта выполните `node scripts/site-theme.mjs winter` для праздничной темы или `node scripts/site-theme.mjs classic` для обычной. Команда без аргумента показывает текущую тему. Выбор применяется к главной, публичному меню, гостевым заказам и панели бара после обновления страницы.
+
+После первого обновления проекта пересоберите только веб-контейнер командой `docker compose up -d --build --no-deps web`. Дальнейшие переключения темы берутся с диска и сохраняются при перезапуске контейнеров. Для отдельного файла `standalone.html` тема выбирается при сборке. Стили тем находятся в `frontend/src/styles/classic.css` и `frontend/src/styles/winter.css`.
+
 ## Локальный запуск
 
 Запустите Docker Desktop, затем `Start-SpaceArena.bat` или `docker compose up -d --build --wait`.

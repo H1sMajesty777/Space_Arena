@@ -1,4 +1,6 @@
 import { useEffect, useRef } from 'react';
+import { snowflakes } from './winter/snowflakes';
+import { isWinterTheme } from '../theme';
 
 const COMPACT_SKY = '(max-width: 820px), (hover: none)';
 const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
@@ -63,7 +65,7 @@ export function Sky({ className = 'space-sky club-sky', cursorGlow = false }) {
         const size = star.depth * 2.2;
         context.fillRect(x, y + (full ? mouseY * star.depth * 18 : 0), size, size);
       }
-      if (full) drawComet();
+      if (full && !isWinterTheme) drawComet();
     }
 
     function schedule() {
@@ -160,6 +162,13 @@ export function Sky({ className = 'space-sky club-sky', cursorGlow = false }) {
       <div className="au a" />
       <div className="au b" />
       {cursorGlow && <div id="cg" ref={glowRef} hidden />}
+      {isWinterTheme && (
+        <div className="winter-snow">
+          {snowflakes.map((style) => (
+            <i key={style.left} style={style} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { extname } from 'node:path';
 import { build } from 'vite';
 import { imagePaths } from './src/features/public-site/image-paths.js';
+import { readThemeScript, themeScriptPath } from './theme-config.mjs';
 
 const root = import.meta.dirname;
 const types = { '.jpg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' };
@@ -37,8 +38,10 @@ const script = output.find((file) => file.type === 'chunk' && file.isEntry).code
 const styles = output.find((file) => file.fileName.endsWith('.css')).source;
 const template = await readFile(new URL('./index.html', import.meta.url), 'utf8');
 const favicon = await inlineImage('/assets/sym.png');
+const themeScript = await readThemeScript();
 const standalone = template
   .replace('/assets/sym.png', favicon)
+  .replace(`<script src="${themeScriptPath}"></script>`, () => `<script>${themeScript}</script>`)
   .replace('</head>', () => `<style>${styles}</style>\n  </head>`)
   .replace(
     /<script type="module" src="\/src\/public\.jsx"><\/script>/,

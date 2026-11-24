@@ -1,0 +1,80 @@
+.winter-hat {
+  position: absolute;
+  z-index: 6;
+  top: var(--hat-top, 0%);
+  left: 50%;
+  width: var(--hat-width, 24%);
+  aspect-ratio: 3 / 2;
+  /* Вершина A входит под левую часть наклонной опушки, как в референсе. */
+  transform: translate(-29.3%, -53.4%);
+  filter: drop-shadow(0 1px 3px rgb(10 6 28 / 0.55));
+  pointer-events: none;
+}
+
+.winter-hat::before,
+.winter-hat::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: center / contain no-repeat;
+}
+
+.winter-hat::before {
+  background-image: url('./hat-tip.svg');
+  transform-origin: 67% 24%;
+}
+
+.winter-hat::after {
+  background-image: url('./hat-base.svg');
+}
+
+.winter-snow {
+  --snow-drift: clamp(160px, 41vmin, 390px);
+  --snow-size: clamp(35px, 4.4vw, 58px);
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.winter-snow i {
+  position: absolute;
+  top: -64px;
+  width: calc(var(--flake-size) * var(--snow-size));
+  aspect-ratio: 1;
+  background: url('./snowflake.svg') center / contain no-repeat;
+  animation: winter-snowfall linear infinite;
+}
+
+.winter-snow i:nth-child(3n + 1) {
+  background-image: url('./ice-crystal.svg');
+}
+
+@keyframes winter-snowfall {
+  from {
+    transform: translate3d(0, 0, 0) rotate(var(--flake-angle));
+  }
+
+  to {
+    transform: translate3d(calc(-1 * var(--snow-drift)), calc(100dvh + 128px), 0)
+      rotate(calc(var(--flake-angle) + var(--flake-turn)));
+  }
+}
+
+@media (max-width: 820px), (hover: none) {
+  .winter-snow {
+    --snow-drift: clamp(120px, 49vmin, 280px);
+    --snow-size: clamp(32px, 9vw, 43px);
+  }
+
+  .winter-snow i:nth-child(n + 27) {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .winter-snow i {
+    animation-play-state: paused;
+  }
+}

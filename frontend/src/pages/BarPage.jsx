@@ -5,6 +5,7 @@ import { Catalog } from '../components/admin/Catalog';
 import { ItemEditor } from '../components/admin/ItemEditor';
 import { TableAccess } from '../components/admin/TableAccess';
 import { ClubMap } from '../components/admin/ClubMap';
+import { SiteBrand } from '../components/SiteBrand';
 import { usePolling } from '../hooks/usePolling';
 import { useOrderSound } from '../hooks/useOrderSound';
 import { BAR_REFRESH_MS } from '../config/orders';
@@ -118,7 +119,7 @@ export function BarPage() {
   ) : (
     <main className="login-layout w">
       <section>
-        <img className="login-logo" src="/assets/logo.png" alt="SPACE ARENA" />
+        <SiteBrand className="login-logo" src="/assets/logo.png" alt="SPACE ARENA" />
         <p className="eb">ПАНЕЛЬ БАРА</p>
         <h1>
           Всё под
@@ -215,7 +216,7 @@ function Dashboard({ api, logout }) {
     <>
       <header className="hd">
         <div className="w hi club-header">
-          <img className="club-logo" src="/assets/logo.png" alt="SPACE ARENA" />
+          <SiteBrand className="club-logo" src="/assets/logo.png" alt="SPACE ARENA" />
           <span className="table-indicator">Панель бара</span>
           <button
             className="quiet-button"

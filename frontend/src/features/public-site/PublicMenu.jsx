@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { MenuBrand } from '../../components/SiteBrand';
 import { PUBLIC_KITCHEN_HOURS } from '../../config/menu';
 import { DISHES, MENU } from './content';
 import { images } from './images';
@@ -139,9 +140,7 @@ export function PublicMenu({ hidden, header }) {
   return (
     <main id="menuv" className={query ? 'searching' : undefined} hidden={hidden}>
       <section className="mh w">
-        <p className="eb" style={{ justifyContent: 'center' }}>
-          SPACE ARENA
-        </p>
+        <MenuBrand src={images.logo} />
         <h1 className="sp gr" aria-label="Меню">
           <HeadlineWord text="Меню" />
         </h1>

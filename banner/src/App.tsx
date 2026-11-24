@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
+import { snowflakes } from "../../frontend/src/components/winter/snowflakes";
 
 type GuestLink = { order_url: string | null; expires_at: number; status: string };
 
@@ -76,12 +77,17 @@ function App() {
               />
             ))}
           </div>
-          <div className="shooting-star" />
+          <div className="winter-snow">
+            {snowflakes.map((style) => (
+              <i key={style.left} style={style} />
+            ))}
+          </div>
         </div>
 
         <div className="launch-mark" aria-hidden="true">
           <div className="rocket-body">
             <img className="mark-main" src={`${import.meta.env.BASE_URL}space-mark.png`} alt="" />
+            <span className="winter-hat" />
             <div className="exhaust">
               <div className="engine-plume" />
               <div className="engine-core" />
@@ -93,6 +99,7 @@ function App() {
           <div className="orbital-halo" aria-hidden="true" />
           <div className="logo-shell">
             <img className="arena-logo" src={`${import.meta.env.BASE_URL}space-arena.png`} alt="SPACE ARENA" />
+            <span className="winter-hat" aria-hidden="true" />
           </div>
           <div className="collaboration">
             <span />

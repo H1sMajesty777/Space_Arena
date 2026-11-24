@@ -1,4 +1,4 @@
-import { defineConfig, type HtmlTagDescriptor, type Plugin } from 'vite'
+import { defineConfig, searchForWorkspaceRoot, type HtmlTagDescriptor, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import fs from 'node:fs'
@@ -33,6 +33,9 @@ react(),
       },
     },
     server: {
+      fs: {
+        allow: [searchForWorkspaceRoot(__dirname), path.resolve(__dirname, '../frontend/src/components/winter')],
+      },
       host: process.env.FIGMA_DEV_SERVER_HOST || '0.0.0.0',
       port: parseInt(process.env.PORT || '8443'),
       strictPort: true,

@@ -4,6 +4,7 @@ import { Checkout } from '../components/Checkout';
 import { Menu } from '../components/Menu';
 import { ItemDetails } from '../components/ItemChoices';
 import { GuestOrders } from '../components/GuestOrders';
+import { MenuBrand, SiteBrand } from '../components/SiteBrand';
 import { placeName } from '../config/floor';
 import {
   GUEST_REFRESH_MS,
@@ -314,7 +315,7 @@ export function OrderPage() {
       <header className="hd order-header" ref={header}>
         <div className="w hi">
           <a className="header-brand" href="/#home" aria-label="SPACE ARENA — главная">
-            <img src="/assets/logo.png" alt="SPACE ARENA" />
+            <SiteBrand src="/assets/logo.png" alt="SPACE ARENA" />
           </a>
           <nav aria-label="Основная навигация">
             <a
@@ -343,7 +344,7 @@ export function OrderPage() {
       </header>
       <main id="menuv" hidden={shopView !== 'menu'} tabIndex={-1}>
         <section className="mh w order-intro">
-          <p className="eb">SPACE ARENA</p>
+          <MenuBrand src="/assets/logo.png" />
           <h1 className="sp gr" tabIndex={-1} aria-label="Меню">
             {[...'Меню'].map((letter, index) => (
               <span key={letter} className="ch" style={{ '--i': index }} aria-hidden="true">

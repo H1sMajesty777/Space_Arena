@@ -5,6 +5,8 @@ __pycache__/
 .venv.old-*/
 node_modules/
 frontend/dist/
+frontend/public/theme/selected.js
+frontend/public/theme/.selected-*.tmp
 backend/uploads/
 
 tls/
