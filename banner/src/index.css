@@ -414,6 +414,18 @@
   pointer-events: none;
   animation: logo-sheen 2s var(--settled) ease-in-out 1 both;
 }
+.shooting-star {
+  position: absolute;
+  top: 16%;
+  left: 62%;
+  width: 130px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #d5baff);
+  box-shadow: 0 0 10px #a357ff;
+  opacity: 0;
+  pointer-events: none;
+  animation: shooting-star 1.4s var(--settled) ease-out both;
+}
 @keyframes logo-float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
@@ -431,6 +443,12 @@
   6%, 14% { opacity: 0.6; }
   22%, 100% { opacity: 0; background-position: 0% 0; }
 }
+@keyframes shooting-star {
+  0% { opacity: 0; transform: rotate(24deg) translateX(-80px); }
+  20% { opacity: 0.8; }
+  100% { opacity: 0; transform: rotate(24deg) translateX(350px); }
+}
+
 /* Вход, пауза, два импульса двигателя и отрыв на 1,24 с. */
 @keyframes rocket-flight {
   0% {
@@ -601,6 +619,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .banner::before,
+  .shooting-star,
   .logo-shell::after,
   .launch-mark,
   .wake-heat {
